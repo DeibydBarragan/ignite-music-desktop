@@ -138,6 +138,7 @@ class ConfigManager {
             `# Updated: ${new Date().toISOString()}`,
             '',
             `TOKEN=${config.discordToken.trim()}`,
+            `DISCORD_TOKEN=${config.discordToken.trim()}`,
             `CLIENT_ID=${String(config.clientId).trim()}`,
             `CLIENT_SECRET=${config.clientSecret.trim()}`,
             `GUILD_ID=${String(config.guildId).trim()}`,

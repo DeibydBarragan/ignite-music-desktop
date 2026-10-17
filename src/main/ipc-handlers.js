@@ -14,6 +14,7 @@ const { UpdaterEngine } = require('./updater-engine');
 function getEnvOverrides(config) {
     return {
         TOKEN: config.discordToken,
+        DISCORD_TOKEN: config.discordToken,
         CLIENT_ID: config.clientId,
         CLIENT_SECRET: config.clientSecret,
         GUILD_ID: config.guildId,

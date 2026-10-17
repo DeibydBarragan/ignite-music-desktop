@@ -1,9 +1,18 @@
 'use strict';
 
-const { fork } = require('node:child_process');
+const { fork, execSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 const { EventEmitter } = require('node:events');
+
+function resolveNodeBinary() {
+    try {
+        const first = execSync('where.exe node', { encoding: 'utf8' }).split(/\r?\n/)[0]?.trim();
+        if (first && fs.existsSync(first)) return first;
+    } catch { /* fallback */ }
+    const p = 'C:\\Program Files\\nodejs\\node.exe';
+    return fs.existsSync(p) ? p : process.execPath;
+}
 
 class ProcessSupervisor extends EventEmitter {
     constructor() {
@@ -62,6 +71,7 @@ class ProcessSupervisor extends EventEmitter {
             this.child = fork(entryPoint, [], {
                 cwd: serviceDir,
                 env: mergedEnv,
+                execPath: resolveNodeBinary(),
                 stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
             });
 
