@@ -39,10 +39,22 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
     updater.on('status-changed', (s) => safeSend('updater:status-changed', s));
 
     function resolveServiceDir() {
-        const userServiceDir = path.join(configManager.dataDir, 'service', 'current');
-        if (fs.existsSync(path.join(userServiceDir, 'index.js'))) return userServiceDir;
-        const siblingDev = path.resolve(__dirname, '../../../ignite-music');
-        if (fs.existsSync(path.join(siblingDev, 'index.js'))) return siblingDev;
+        const candidates = [
+            path.join(configManager.dataDir, 'service', 'current'),
+            path.resolve(__dirname, '../../../ignite-music'),
+            path.resolve(__dirname, '../../../../ignite-music'),
+            path.resolve(path.dirname(process.execPath), '../../../ignite-music'),
+            path.resolve(path.dirname(process.execPath), '../../../../ignite-music'),
+            path.resolve(process.cwd(), '../ignite-music'),
+            path.resolve(process.cwd(), 'ignite-music'),
+            'C:\\Users\\Usuario\\Documents\\Proyectos\\ignite\\ignite-music',
+        ];
+
+        for (const candidate of candidates) {
+            if (candidate && fs.existsSync(path.join(candidate, 'index.js'))) {
+                return candidate;
+            }
+        }
         return process.cwd();
     }
 
@@ -64,6 +76,13 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
         if (!config.isConfigured) return { success: false, error: 'CONFIG_REQUIRED' };
 
         const serviceDir = resolveServiceDir();
+        if (!fs.existsSync(path.join(serviceDir, 'index.js'))) {
+            return {
+                success: false,
+                error: `No se encontró index.js en el directorio del bot: ${serviceDir}`,
+            };
+        }
+
         configManager.writeEnvFile(serviceDir, config);
 
         const res = supervisor.start(serviceDir, getEnvOverrides(config));

@@ -80,21 +80,43 @@ export function initServiceControls() {
     if (btnStart) {
         btnStart.addEventListener('click', async () => {
             btnStart.disabled = true;
-            await window.igniteLauncher.startService();
+            try {
+                const res = await window.igniteLauncher.startService();
+                if (res && !res.success) {
+                    btnStart.disabled = false;
+                    alert(`No se pudo iniciar el servicio:\n${res.error || 'Error desconocido'}`);
+                }
+            } catch (err) {
+                btnStart.disabled = false;
+                alert(`Error al iniciar el servicio: ${err.message}`);
+            }
         });
     }
 
     if (btnStop) {
         btnStop.addEventListener('click', async () => {
             btnStop.disabled = true;
-            await window.igniteLauncher.stopService();
+            try {
+                const res = await window.igniteLauncher.stopService();
+                if (res && !res.success) btnStop.disabled = false;
+            } catch {
+                btnStop.disabled = false;
+            }
         });
     }
 
     if (btnRestart) {
         btnRestart.addEventListener('click', async () => {
             btnRestart.disabled = true;
-            await window.igniteLauncher.restartService();
+            try {
+                const res = await window.igniteLauncher.restartService();
+                if (res && !res.success) {
+                    btnRestart.disabled = false;
+                    alert(`No se pudo reiniciar el servicio:\n${res.error || 'Error'}`);
+                }
+            } catch {
+                btnRestart.disabled = false;
+            }
         });
     }
 

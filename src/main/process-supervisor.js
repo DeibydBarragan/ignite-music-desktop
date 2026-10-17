@@ -47,9 +47,16 @@ class ProcessSupervisor extends EventEmitter {
         const mergedEnv = {
             ...process.env,
             ...envOverrides,
+            ELECTRON_RUN_AS_NODE: '1',
             FORCE_COLOR: '1',
             NODE_ENV: 'production',
         };
+
+        this.emit('log', {
+            type: 'stdout',
+            text: `[Supervisor] Iniciando servicio de Ignite Music (${entryPoint})...`,
+            timestamp: new Date().toISOString(),
+        });
 
         try {
             this.child = fork(entryPoint, [], {
