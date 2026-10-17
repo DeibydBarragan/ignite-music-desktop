@@ -1,0 +1,27 @@
+{
+  "name": "ignite-music-desktop",
+  "version": "1.0.0",
+  "description": "Desktop Launcher and Service Supervisor for Ignite Music",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"test/**/*.test.js\"",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "keywords": [
+    "ignite",
+    "music",
+    "electron",
+    "discord-bot",
+    "launcher"
+  ],
+  "author": "DeibydBarragan",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^26.15.3"
+  }
+}

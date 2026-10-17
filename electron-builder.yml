@@ -1,0 +1,54 @@
+appId: com.deibydbarragan.ignite-music-launcher
+productName: Ignite Music
+copyright: Copyright © 2026 DeibydBarragan
+artifactName: "${productName}-Setup-${version}.${ext}"
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - "src/**/*"
+  - "resources/**/*"
+  - "package.json"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/*.d.ts"
+  - "!**/node_modules/.bin"
+
+extraResources:
+  - from: "resources/bin"
+    to: "bin"
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "Ignite Music"
+  uninstallDisplayName: "Ignite Music Launcher"
+  deleteAppDataOnUninstall: false
+  runAfterFinish: true
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  icon: resources/icon.png
+  category: AudioVideo
+
+publish:
+  provider: github
+  owner: DeibydBarragan
+  repo: ignite-music
+  releaseType: release
