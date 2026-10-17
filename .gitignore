@@ -5,6 +5,7 @@ node_modules/
 dist/
 out/
 *.blockmap
+resources/bin/node.exe
 
 # Runtime local data & encrypted credentials
 .data/

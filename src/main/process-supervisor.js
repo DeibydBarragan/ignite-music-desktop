@@ -6,6 +6,15 @@ const fs = require('node:fs');
 const { EventEmitter } = require('node:events');
 
 function resolveNodeBinary() {
+    const bundled = [
+        path.join(process.resourcesPath || '', 'bin', 'node.exe'),
+        path.resolve(__dirname, '../../resources/bin/node.exe'),
+        path.resolve(process.cwd(), 'resources/bin/node.exe'),
+    ];
+    for (const b of bundled) {
+        if (b && fs.existsSync(b)) return b;
+    }
+
     try {
         const first = execSync('where.exe node', { encoding: 'utf8' }).split(/\r?\n/)[0]?.trim();
         if (first && fs.existsSync(first)) return first;
