@@ -52,6 +52,7 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
         assert.equal(typeof exposedApi.getConfig, 'function');
         assert.equal(typeof exposedApi.saveConfig, 'function');
         assert.equal(typeof exposedApi.generateApiSecret, 'function');
+        assert.equal(typeof exposedApi.importConfigFile, 'function');
         assert.equal(typeof exposedApi.loginWithDiscord, 'function');
         assert.equal(typeof exposedApi.logout, 'function');
         assert.equal(typeof exposedApi.getCurrentUser, 'function');
@@ -97,11 +98,21 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
             isEncryptionAvailable: () => false,
         };
 
+        const mockDialog = {
+            showOpenDialog: mock.fn(async () => ({ canceled: true })),
+        };
+
+        const mockShell = {
+            openExternal: mock.fn(),
+        };
+
         require.cache[require.resolve('electron')] = {
             exports: {
                 ipcMain: mockIpcMain,
                 app: mockApp,
                 safeStorage: mockSafeStorage,
+                dialog: mockDialog,
+                shell: mockShell,
             },
         };
 
@@ -124,6 +135,7 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
         assert.ok(registeredHandlers.has('updater:check'));
         assert.ok(registeredHandlers.has('updater:rollback'));
         assert.ok(registeredHandlers.has('updater:update-extractors'));
+        assert.ok(registeredHandlers.has('config:import-file'));
 
         // Verify ping response
         const pingFn = registeredHandlers.get('app:ping');

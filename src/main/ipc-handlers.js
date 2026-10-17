@@ -1,9 +1,10 @@
 'use strict';
 
-const { ipcMain, app } = require('electron');
+const { ipcMain, app, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { ConfigManager, generateApiSecret } = require('./config-manager');
+const { parseConfigFile } = require('./config-parser');
 const { AuthManager } = require('./auth-manager');
 const { verifyGuildMembership } = require('./gatekeeper');
 const { ProcessSupervisor } = require('./process-supervisor');
@@ -98,6 +99,29 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
     ipcMain.handle('config:get', () => configManager.loadConfig());
     ipcMain.handle('config:save', (_e, cfg) => configManager.saveConfig(cfg));
     ipcMain.handle('config:generate-secret', () => generateApiSecret());
+    ipcMain.handle('config:import-file', async () => {
+        const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+            title: 'Importar configuración (.env o .json)',
+            filters: [
+                { name: 'Archivos de configuración (.env, .json, .txt)', extensions: ['env', 'json', 'txt', 'local'] },
+                { name: 'Todos los archivos', extensions: ['*'] },
+            ],
+            properties: ['openFile'],
+        });
+
+        if (canceled || !filePaths || filePaths.length === 0) {
+            return { canceled: true };
+        }
+
+        const selectedPath = filePaths[0];
+        try {
+            const content = fs.readFileSync(selectedPath, 'utf8');
+            const parsed = parseConfigFile(content, path.basename(selectedPath));
+            return { ...parsed, filename: path.basename(selectedPath) };
+        } catch (err) {
+            return { success: false, error: `No se pudo leer el archivo: ${err.message}` };
+        }
+    });
 
     // Auth & Gatekeeper
     ipcMain.handle('auth:login', async () => {

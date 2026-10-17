@@ -8,6 +8,7 @@ export function initSettingsModal(onSaveSuccess) {
     const btnCancelSettings = document.getElementById('btnCancelSettings');
     const btnSaveSettings = document.getElementById('btnSaveSettings');
     const btnGenSecret = document.getElementById('btnGenSecret');
+    const btnImportConfig = document.getElementById('btnImportConfig');
 
     const inputToken = document.getElementById('inputToken');
     const inputClientId = document.getElementById('inputClientId');
@@ -75,6 +76,25 @@ export function initSettingsModal(onSaveSuccess) {
                 if (inputApiSecret) inputApiSecret.value = secret;
             } catch (err) {
                 console.warn('Could not generate secret:', err);
+            }
+        });
+    }
+
+    // Import configuration from file (.env or .json)
+    if (btnImportConfig) {
+        btnImportConfig.addEventListener('click', async () => {
+            try {
+                const res = await window.igniteLauncher.importConfigFile();
+                if (!res || res.canceled) return;
+                if (!res.success) {
+                    showAlert('error', res.error || 'No se pudo importar el archivo.');
+                    return;
+                }
+                populateFields(res.config);
+                const fileLabel = res.filename ? `<strong>${res.filename}</strong>` : 'el archivo seleccionado';
+                showAlert('success', `Datos importados desde ${fileLabel}. Revisa los campos y haz clic en Guardar.`);
+            } catch (err) {
+                showAlert('error', `Error al importar: ${err.message}`);
             }
         });
     }

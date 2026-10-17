@@ -27,6 +27,7 @@ const ALLOWED_INVOKE_CHANNELS = new Set([
     'config:get',
     'config:save',
     'config:generate-secret',
+    'config:import-file',
     'auth:login',
     'auth:logout',
     'auth:get-current-user',
@@ -63,6 +64,7 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
     getConfig: () => ipcRenderer.invoke('config:get'),
     saveConfig: (cfg) => ipcRenderer.invoke('config:save', cfg),
     generateApiSecret: () => ipcRenderer.invoke('config:generate-secret'),
+    importConfigFile: () => ipcRenderer.invoke('config:import-file'),
 
     // Authentication & Gatekeeper
     loginWithDiscord: () => ipcRenderer.invoke('auth:login'),
