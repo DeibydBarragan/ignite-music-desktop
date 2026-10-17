@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <strong>Supervisor de escritorio nativo, orquestador de túneles y gestor de ciclo de vida para Ignite Music</strong><br>
-  <em>Diseñado con Electron para eliminar dependencias externas y brindar una experiencia plug-and-play.</em>
+  <strong>Native desktop supervisor, tunnel orchestrator, and lifecycle manager for Ignite Music</strong><br>
+  <em>Engineered with Electron to eliminate external dependencies and provide a zero-config, plug-and-play experience.</em>
 </p>
 
 <p align="center">
@@ -18,146 +18,146 @@
 
 ---
 
-## 📖 Descripción General
+## 📖 Overview
 
-**Ignite Music Desktop** es el cliente complementario oficial para ejecutar y supervisar el bot de música [`ignite-music`](https://github.com/DeibydBarragan/ignite-music). 
+**Ignite Music Desktop** is the official desktop companion client designed to execute, monitor, and maintain the [`ignite-music`](https://github.com/DeibydBarragan/ignite-music) bot service.
 
-A diferencia de las instalaciones tradicionales que exigen instalar Node.js, compilar dependencias C++ nativas y ejecutar scripts de terminal, este launcher empaqueta un runtime aislado y seguro que permite a cualquier usuario o administrador:
-- Iniciar, reiniciar y detener el bot con un solo clic.
-- Cifrar sus tokens y credenciales mediante el hardware/OS nativo (`safeStorage`).
-- Controlar el acceso mediante autenticación OAuth2 de Discord con verificación de servidor (**Gatekeeper**).
-- Publicar el panel REST a Internet mediante túneles rápidos de Cloudflare sin abrir puertos en el router.
-- Mantener los extractores de audio (`yt-dlp`) actualizados ante bloqueos de plataformas de streaming sin reinstalar la app.
+Unlike traditional server setups that demand installing Node.js, compiling native C++ audio dependencies, and handling command-line flags, this companion launcher packages a sandboxed, hardened Electron runtime allowing any user or administrator to:
+- Start, stop, and restart the bot process with a single click.
+- Encrypt tokens and sensitive secrets using hardware-backed OS credentials (`safeStorage`).
+- Control administrative access via local Discord OAuth2 with server verification (**Gatekeeper**).
+- Expose the REST API to the Internet via Cloudflare Quick Tunnels without manual port-forwarding.
+- Keep audio extractors (`yt-dlp`) up-to-date against streaming platform changes without reinstalling the application.
 
 ---
 
-## 🚀 Características Principales
+## 🚀 Key Features
 
-| Característica | Detalle Técnico |
+| Feature | Technical Specification |
 | :--- | :--- |
-| **Zero-Config Runtime** | No requiere Node.js instalado en el sistema operativo; utiliza el runtime embebido de Electron. |
-| **Seguridad de Grado Empresarial** | `contextIsolation: true`, `nodeIntegration: false`, y `sandbox: true` activos. Canales IPC protegidos por lista blanca estricta. |
-| **Almacenamiento Cifrado** | Tokens de Discord y secretos de API cifrados con las APIs nativas del SO (`DPAPI` en Windows / `Secret Service` en Linux). |
-| **Discord Gatekeeper** | Servidor loopback HTTP efímero (`127.0.0.1:0/callback`) para OAuth2. Verifica membresía y rol administrativo en el servidor de destino. |
-| **Consola ANSI en Tiempo Real** | Intérprete nativo de secuencias de escape ANSI, búfer protegido contra saturación de memoria (máx. 1,000 líneas), auto-scroll inteligente y filtros rápidos. |
-| **Cloudflare Quick Tunnel** | Binario de `cloudflared` embebido; captura y renderiza automáticamente URLs públicas seguras `https://*.trycloudflare.com` con botón de copia rápida. |
-| **Motor de Actualizaciones OTA** | Comprobación asíncrona contra GitHub Releases, descarga atómica y **Rollback automático** en caso de que una versión falle al iniciar. |
-| **Mantenimiento yt-dlp** | Descarga independiente de los últimos binarios de extracción de audio con un solo clic. |
-| **System Tray** | Minimización automática a la bandeja del sistema al presionar **X**, menú contextual nativo y control de instancia única. |
+| **Zero-Config Runtime** | Requires zero external Node.js installation; operates with the self-contained Electron runtime. |
+| **Enterprise Security** | Hardened renderer with `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, and a strict IPC channel whitelist. |
+| **Encrypted Storage** | Discord bot tokens and API secrets are encrypted at rest using native OS cryptographic APIs (`DPAPI` on Windows, `Secret Service` on Linux). |
+| **Discord Gatekeeper** | Local loopback HTTP server (`127.0.0.1:0/callback`) for OAuth2. Validates guild membership and administrator permissions directly against Discord's REST API. |
+| **Real-time ANSI Terminal** | Streams `stdout`/`stderr` with ANSI escape sequence formatting, capped memory buffer (1,000 lines), smart auto-scroll, and log-level filtering. |
+| **Cloudflare Quick Tunnel** | Embedded `cloudflared` binary; automatically intercepts public `https://*.trycloudflare.com` URLs with one-click clipboard copy. |
+| **OTA Update Engine** | Asynchronous GitHub Releases querying, SemVer comparison, atomic file extraction, and **automatic rollback** on startup failure. |
+| **yt-dlp Maintenance** | Independent one-click binary updater for YouTube audio extractors without touching the desktop app binaries. |
+| **System Tray** | Minimizes to Windows notification area on window close (**X**), complete with a native context menu and single-instance locking. |
 
 ---
 
-## 📥 Guía para Usuarios Finales
+## 📥 End-User Guide
 
-### 1. Instalación en Windows
-1. Descarga el instalador más reciente **`Ignite Music-Setup-1.0.0.exe`** desde la sección de **Releases** de GitHub.
-2. Ejecuta el archivo y sigue los pasos del asistente de instalación de NSIS.
-3. Elige la carpeta de destino y decide si deseas crear accesos directos en el Escritorio y Menú Inicio.
-4. Al finalizar, marca la casilla para abrir **Ignite Music** de inmediato.
+### 1. Windows Installation
+1. Download the latest **`Ignite Music-Setup-1.0.0.exe`** installer from the GitHub **Releases** page.
+2. Run the executable and follow the NSIS installation wizard steps.
+3. Choose the target destination directory and configure Desktop / Start Menu shortcut preferences.
+4. On the finish screen, keep the checkbox checked to launch **Ignite Music** immediately.
 
-### 2. Configuración Inicial (Primer Inicio)
-Al arrancar la aplicación por primera vez, se abrirá la ventana de configuración:
-1. **Discord Bot Token**: Pega el token de tu bot obtenido en el [Discord Developer Portal](https://discord.com/developers/applications).
-2. **Client ID**: Copia el *Application ID* de tu aplicación de Discord.
-3. **Guild ID**: ID numérico del servidor de Discord donde opera el bot.
-4. **Client Secret**: Secreto de cliente de tu aplicación en Discord (necesario para el login OAuth2).
-5. **API Secret**: Presiona el botón **[Generar]** para crear una clave de alta entropía (64 caracteres hex) que protegerá tus endpoints REST locales.
-6. Haz clic en **Guardar Credenciales**. Tus claves se almacenarán cifradas localmente.
+### 2. Initial Setup (First Boot)
+When launched for the first time, the configuration modal opens automatically:
+1. **Discord Bot Token**: Paste your bot token from the [Discord Developer Portal](https://discord.com/developers/applications).
+2. **Client ID**: Copy the *Application ID* of your Discord application.
+3. **Guild ID**: Numeric snowflake ID of the Discord server where the bot operates.
+4. **Client Secret**: Client secret of your application (required for the local OAuth2 handshake).
+5. **API Secret**: Click **[Generate]** to create a high-entropy 64-character hex secret that safeguards your local REST endpoints.
+6. Click **Save Credentials**. All keys are immediately encrypted on disk.
 
-### 3. Identificación y Acceso (Gatekeeper)
-1. Presiona el botón **Iniciar Sesión con Discord**.
-2. Tu navegador web se abrirá solicitando autorización de identidad.
-3. El launcher recibirá el código de forma segura en un puerto local efímero y verificará automáticamente contra la API de Discord:
-   - Si eres miembro del servidor configurado: Se desbloqueará el panel de control completo.
-   - Si no perteneces al servidor: Se mostrará una pantalla de acceso denegado informativa con opción de reintentar o cambiar de cuenta.
+### 3. Authentication & Verification (Gatekeeper)
+1. Click **Log In with Discord**.
+2. Your default web browser will open to request identity authorization (`identify` scope).
+3. The launcher intercepts the OAuth2 code on a local ephemeral loopback port and verifies against Discord:
+   - **Authorized member**: Unlocks the dashboard, service controls, and live log stream.
+   - **Non-member**: Displays an Access Denied screen indicating that the logged-in Discord account is not present in the target guild, with options to retry or switch accounts.
 
 ---
 
-## 🛠 Guía de Desarrollo y Comandos
+## 🛠 Developer Guide & Scripts
 
-### Requisitos Previos
-- Node.js 22.x LTS instalado (solo para desarrollo y compilación).
-- npm o gestor compatible.
+### Prerequisites
+- Node.js 22.x LTS installed (only required for local development and compilation).
+- npm or compatible package manager.
 
-### Scripts Disponibles
+### Available Scripts
 
 ```bash
-# Iniciar la aplicación en modo desarrollo con recarga local
+# Launch the application in development mode with live reload
 npm start
 
-# Ejecutar la suite completa de pruebas unitarias (23 tests nativos)
+# Run the automated unit test suite (23 native tests)
 npm test
 
-# Empaquetar la aplicación en carpeta portable descomprimida (dist/win-unpacked)
+# Package the application into an unpacked portable directory (dist/win-unpacked)
 npm run pack
 
-# Generar el instalador ejecutable NSIS para Windows (.exe)
+# Build the complete Windows NSIS executable installer (.exe)
 npm run dist:win
 
-# Generar el paquete portable para Linux (.AppImage)
+# Build the portable Linux package (.AppImage)
 npm run dist:linux
 ```
 
 ---
 
-## 🏛 Arquitectura del Proyecto
+## 🏛 Project Architecture
 
 ```text
 ignite-music-desktop/
-├── .github/workflows/    # Automatización CI/CD de compilación y publicación
-│   └── build-desktop.yml # Compila instaladores Windows/Linux ante nuevos tags
-├── build/                # Iconos del instalador (.ico, .png)
-├── resources/            # Binarios auxiliares embebidos (cloudflared, yt-dlp)
+├── .github/workflows/    # CI/CD automated release pipeline
+│   └── build-desktop.yml # Multi-platform installer compilation on git tags
+├── build/                # High-resolution application and installer icons (.ico, .png)
+├── resources/            # Embedded auxiliary runtime binaries (cloudflared, yt-dlp)
 │   └── bin/
 │       └── cloudflared.exe
 ├── src/
-│   ├── main/             # Proceso Principal (Supervisión y APIs del SO)
-│   │   ├── index.js              # Ciclo de vida de la ventana y single-instance lock
-│   │   ├── config-manager.js     # Cifrado seguro seguro vía safeStorage
-│   │   ├── config-schema.js      # Esquema de validación y generación de secretos
-│   │   ├── auth-manager.js       # Servidor HTTP loopback OAuth2 efímero
-│   │   ├── gatekeeper.js         # Validación REST de pertenencia a servidores Discord
-│   │   ├── process-supervisor.js # Monitoreo de subproceso (fork) y graceful shutdown
-│   │   ├── tunnel-supervisor.js  # Binario cloudflared y detección regex de URLs
-│   │   ├── updater-engine.js     # Motor SemVer, releases de GitHub y rollback
-│   │   ├── tray-manager.js       # Integración con la bandeja del sistema (System Tray)
-│   │   └── ipc-handlers.js       # Registro de canales de comunicación IPC
-│   ├── preload/          # Puente Seguro contextBridge
-│   │   └── index.js              # API expuesta como window.igniteLauncher
-│   └── renderer/         # Interfaz Gráfica (HTML5 / Vanilla ES Modules)
-│       ├── index.html            # Estructura visual de la aplicación
-│       ├── css/app.css           # Estilos oscuros y diseño modular
-│       └── js/                   # Componentes modulares de interfaz (< 150 líneas)
-│           ├── app.js            # Punto de entrada y orquestador del frontend
-│           ├── auth-view.js      # Máquina de estados de autenticación y bloqueo
-│           ├── log-viewer.js     # Consola ANSI en tiempo real y auto-scroll
-│           ├── service-controls.js # Controles de Iniciar, Detener, Reiniciar y Uptime
-│           ├── settings-modal.js # Formulario de credenciales y generación de claves
-│           ├── tunnel-card.js    # Tarjeta de estado de Cloudflare y copia de URL
-│           └── update-banner.js  # Notificación de versión y actualización yt-dlp
-├── test/                 # Batería de pruebas automatizadas (node:test)
-├── electron-builder.yml  # Configuración del empaquetador NSIS y AppImage
-└── package.json          # Metadatos del proyecto y dependencias de Electron
+│   ├── main/             # Main Process (Supervisors and native OS integrations)
+│   │   ├── index.js              # Application lifecycle and single-instance lock
+│   │   ├── config-manager.js     # safeStorage encrypted credential persistence
+│   │   ├── config-schema.js      # Configuration validation schema and hex entropy generator
+│   │   ├── auth-manager.js       # Ephemeral HTTP loopback Discord OAuth2 flow
+│   │   ├── gatekeeper.js         # Discord REST guild membership validator
+│   │   ├── process-supervisor.js # Child process fork supervisor and graceful shutdown
+│   │   ├── tunnel-supervisor.js  # cloudflared process manager and URL regex extractor
+│   │   ├── updater-engine.js     # SemVer engine, GitHub Releases client, and rollback
+│   │   ├── tray-manager.js       # System tray icon, notifications, and context menu
+│   │   └── ipc-handlers.js       # Whitelisted IPC message bus dispatcher
+│   ├── preload/          # Secure contextBridge interface
+│   │   └── index.js              # Whitelisted window.igniteLauncher API
+│   └── renderer/         # Presentation Layer (HTML5 / Vanilla ES Modules)
+│       ├── index.html            # Main markup shell
+│       ├── css/app.css           # Modern dark theme stylesheet
+│       └── js/                   # Modular UI components (< 150 lines per module)
+│           ├── app.js            # Frontend orchestrator and entry point
+│           ├── auth-view.js      # Authentication and Access Denied state machine
+│           ├── log-viewer.js     # Real-time ANSI terminal renderer and auto-scroll
+│           ├── service-controls.js # Start, stop, restart triggers and uptime timer
+│           ├── settings-modal.js # Credential inputs and key generator
+│           ├── tunnel-card.js    # Cloudflare status card with copyable URL
+│           └── update-banner.js  # Version notification and yt-dlp updater trigger
+├── test/                 # Test suites (node:test)
+├── electron-builder.yml  # Packaging configuration for NSIS and AppImage
+└── package.json          # Project manifest and Electron dependencies
 ```
 
 ---
 
-## ❓ Preguntas Frecuentes y Solución de Problemas
+## ❓ Troubleshooting & FAQ
 
-### 1. ¿Por qué la ventana no se cierra al hacer clic en la "X"?
-La aplicación está configurada para continuar ejecutándose en segundo plano en la bandeja del sistema (junto al reloj de Windows). Para salir definitivamente, haz clic derecho sobre el icono de la llama en el System Tray y selecciona **"Salir de Ignite Music"**.
+### 1. Why doesn't the application close when clicking the "X" button?
+The application is configured to minimize to the Windows notification tray area (next to the taskbar clock) so that the bot service remains uninterrupted. To close the application completely, right-click the flame icon in the System Tray and select **"Exit Ignite Music"**.
 
-### 2. ¿Qué hacer si YouTube bloquea la reproducción de canciones?
-No es necesario actualizar toda la aplicación. Ve a **⚙️ Configuración** y en la sección *Mantenimiento y Extractores*, presiona **⚡ Actualizar yt-dlp**. El launcher descargará la versión más reciente del extractor en segundos.
+### 2. What should I do if YouTube blocks audio playback?
+You do not need to reinstall or update the whole desktop application. Navigate to **⚙️ Settings**, scroll to the *Maintenance and Extractors* section, and click **⚡ Update yt-dlp**. The latest extractor will be downloaded in seconds.
 
-### 3. La pantalla muestra "Acceso Denegado"
-Asegúrate de:
-1. Haber iniciado sesión con la cuenta de Discord correcta.
-2. Que tu bot de Discord ya esté unido al servidor cuyo `GUILD_ID` colocaste en la configuración.
-3. Pertenecer activamente a dicho servidor de Discord.
+### 3. The interface shows "Access Denied"
+Verify the following:
+1. You logged in with the intended Discord user account.
+2. The bot is actively joined to the Discord server specified by `GUILD_ID` in your settings.
+3. Your Discord account is a current member of that server.
 
 ---
 
-## 📄 Licencia
+## 📄 License
 
-Este proyecto está distribuido bajo la licencia **MIT**. Desarrollado por [DeibydBarragan](https://github.com/DeibydBarragan).
+Distributed under the **MIT** license. Developed by [DeibydBarragan](https://github.com/DeibydBarragan).
