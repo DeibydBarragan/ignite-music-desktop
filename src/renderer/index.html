@@ -61,6 +61,7 @@
             <p class="card-subtitle-hero">Identifícate con tu cuenta de Discord para verificar tu acceso al servidor configurado.</p>
             <div id="loginAlert" class="alert-box" style="display: none; max-width: 480px; margin: 0 auto 16px;"></div>
             <button class="btn btn-discord" id="btnLoginDiscord"><span>Iniciar Sesión con Discord</span></button>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 14px;">Redirect URI para Discord Portal: <code style="color: #818cf8; user-select: all;">http://127.0.0.1:53134/callback</code></p>
         </section>
 
         <!-- Access Denied View -->
@@ -191,6 +192,7 @@
                                 <input type="password" id="inputClientSecret" class="form-control" placeholder="••••••••" autocomplete="off">
                                 <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputClientSecret">👁️</button>
                             </div>
+                            <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">Agrega en Discord Portal &gt; OAuth2 &gt; Redirects: <code style="color: #818cf8; user-select: all;">http://127.0.0.1:53134/callback</code></small>
                         </div>
                         <div class="form-group">
                             <label for="inputApiSecret" class="form-label">API Secret (Mínimo 32 caracteres) <span class="required">*</span></label>

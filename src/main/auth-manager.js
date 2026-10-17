@@ -3,13 +3,16 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { shell, app, safeStorage } = require('electron');
+const { shell, app } = require('electron');
+
+const OAUTH_PORT = 53134;
+const OAUTH_REDIRECT_URI = `http://127.0.0.1:${OAUTH_PORT}/callback`;
 
 class AuthManager {
-    /**
-     * @param {string} [customDataDir] Optional custom directory for testing
-     * @param {typeof fetch} [customFetch] Optional fetch implementation for testing
-     */
+    static get REDIRECT_URI() {
+        return OAUTH_REDIRECT_URI;
+    }
+
     constructor(customDataDir, customFetch = globalThis.fetch) {
         this.dataDir = customDataDir || (app && typeof app.getPath === 'function' ? app.getPath('userData') : path.join(process.cwd(), '.data'));
         this.sessionFile = path.join(this.dataDir, 'launcher-session.json');
@@ -17,28 +20,16 @@ class AuthManager {
         this.currentServer = null;
     }
 
-    /**
-     * Loads persisted user session if available.
-     *
-     * @returns {object|null}
-     */
     loadSession() {
         if (!fs.existsSync(this.sessionFile)) return null;
         try {
-            const raw = fs.readFileSync(this.sessionFile, 'utf8');
-            const data = JSON.parse(raw);
-            if (!data.user || !data.user.id) return null;
-            return data;
+            const data = JSON.parse(fs.readFileSync(this.sessionFile, 'utf8'));
+            return data.user?.id ? data : null;
         } catch {
             return null;
         }
     }
 
-    /**
-     * Persists user session to disk.
-     *
-     * @param {object} session
-     */
     saveSession(session) {
         if (!fs.existsSync(this.dataDir)) {
             fs.mkdirSync(this.dataDir, { recursive: true });
@@ -48,26 +39,15 @@ class AuthManager {
         fs.renameSync(tmp, this.sessionFile);
     }
 
-    /**
-     * Clears current session.
-     */
     clearSession() {
         try { fs.unlinkSync(this.sessionFile); } catch { /* ignore */ }
     }
 
-    /**
-     * Initiates the Discord OAuth2 handshake using an ephemeral loopback HTTP server.
-     *
-     * @param {string} clientId
-     * @param {string} clientSecret
-     * @returns {Promise<{ success: boolean, user?: object, error?: string }>}
-     */
     async startOAuthFlow(clientId, clientSecret) {
         if (!clientId || !clientSecret) {
             return { success: false, error: 'CLIENT_ID_OR_SECRET_MISSING' };
         }
 
-        // Clean up any lingering server
         if (this.currentServer) {
             try { this.currentServer.close(); } catch { /* ignore */ }
             this.currentServer = null;
@@ -75,6 +55,14 @@ class AuthManager {
 
         return new Promise((resolve) => {
             let handled = false;
+
+            const finish = (result) => {
+                if (handled) return;
+                handled = true;
+                try { server.close(); } catch { /* ignore */ }
+                this.currentServer = null;
+                resolve(result);
+            };
 
             const server = http.createServer(async (req, res) => {
                 const reqUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -94,26 +82,19 @@ class AuthManager {
                     return;
                 }
 
-                // Successful callback received
                 res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
                 res.end('<!DOCTYPE html><html><body style="background:#0b0f19;color:#6ee7b7;font-family:sans-serif;text-align:center;padding:40px;"><h2 style="color:#10b981;">✅ ¡Autenticación Completada!</h2><p>Puedes cerrar esta pestaña y volver a Ignite Music Launcher.</p><script>setTimeout(()=>window.close(),2500);</script></body></html>');
 
                 try {
-                    const port = server.address().port;
-                    const redirectUri = `http://127.0.0.1:${port}/callback`;
-
-                    // Exchange code for token
                     const tokenRes = await this.fetch('https://discord.com/api/v10/oauth2/token', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: new URLSearchParams({
                             client_id: clientId.trim(),
                             client_secret: clientSecret.trim(),
                             grant_type: 'authorization_code',
                             code,
-                            redirect_uri: redirectUri,
+                            redirect_uri: OAUTH_REDIRECT_URI,
                         }).toString(),
                     });
 
@@ -124,12 +105,8 @@ class AuthManager {
                     }
 
                     const tokenData = await tokenRes.json();
-
-                    // Fetch user info
                     const userRes = await this.fetch('https://discord.com/api/v10/users/@me', {
-                        headers: {
-                            Authorization: `${tokenData.token_type} ${tokenData.access_token}`,
-                        },
+                        headers: { Authorization: `${tokenData.token_type} ${tokenData.access_token}` },
                     });
 
                     if (!userRes.ok) {
@@ -148,39 +125,21 @@ class AuthManager {
                             : `https://cdn.discordapp.com/embed/avatars/${(BigInt(userData.id) >> 22n) % 6n}.png`,
                     };
 
-                    const session = {
-                        user: userProfile,
-                        authenticatedAt: new Date().toISOString(),
-                    };
-
-                    this.saveSession(session);
+                    this.saveSession({ user: userProfile, authenticatedAt: new Date().toISOString() });
                     finish({ success: true, user: userProfile });
                 } catch (err) {
                     finish({ success: false, error: `AUTH_EXCEPTION: ${err.message}` });
                 }
             });
 
-            const finish = (result) => {
-                if (handled) return;
-                handled = true;
-                try { server.close(); } catch { /* ignore */ }
-                this.currentServer = null;
-                resolve(result);
-            };
-
-            // Timeout after 120 seconds if user abandons auth
             const timeoutTimer = setTimeout(() => {
                 finish({ success: false, error: 'AUTH_TIMEOUT' });
             }, 120_000);
             timeoutTimer.unref?.();
 
-            server.listen(0, '127.0.0.1', () => {
+            server.listen(OAUTH_PORT, '127.0.0.1', () => {
                 this.currentServer = server;
-                const port = server.address().port;
-                const redirectUri = `http://127.0.0.1:${port}/callback`;
-
-                const authUrl = `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId.trim())}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=identify`;
-
+                const authUrl = `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId.trim())}&response_type=code&redirect_uri=${encodeURIComponent(OAUTH_REDIRECT_URI)}&scope=identify`;
                 try {
                     shell.openExternal(authUrl);
                 } catch (err) {
@@ -195,4 +154,4 @@ class AuthManager {
     }
 }
 
-module.exports = { AuthManager };
+module.exports = { AuthManager, OAUTH_PORT, OAUTH_REDIRECT_URI };
