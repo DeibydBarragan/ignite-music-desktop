@@ -53,7 +53,7 @@ function getEnvOverrides(config) {
 function ensureFingerprintMarker(dir) {
     try {
         const marker = path.join(dir, 'node_modules', '.musicbot-installed');
-        if (fs.existsSync(path.join(dir, 'node_modules')) && (!fs.existsSync(marker) || fs.readFileSync(marker, 'utf8').trim() === '')) {
+        if (fs.existsSync(path.join(dir, 'node_modules'))) {
             const hash = crypto.createHash('sha256');
             for (const file of ['package.json', 'package-lock.json']) {
                 const full = path.join(dir, file);
@@ -69,8 +69,13 @@ function resolveServiceDir(configManager) {
     const currentDir = path.join(dataDir, 'service', 'current');
     const bundledDir = path.join(process.resourcesPath || '', 'service', 'bundled');
     if (fs.existsSync(path.join(currentDir, 'index.js'))) {
-        // Auto-heal: if current directory is missing node_modules but bundled snapshot has it, copy it
-        if (!fs.existsSync(path.join(currentDir, 'node_modules')) && fs.existsSync(path.join(bundledDir, 'node_modules'))) {
+        // Auto-heal: if current directory is missing node_modules or has missing critical dependencies, copy from bundled snapshot
+        const currentMarker = path.join(currentDir, 'node_modules', '.musicbot-installed');
+        const isNodeModulesIncomplete = !fs.existsSync(path.join(currentDir, 'node_modules')) ||
+            !fs.existsSync(path.join(currentDir, 'node_modules', 'discord.js')) ||
+            !fs.existsSync(currentMarker);
+
+        if (isNodeModulesIncomplete && fs.existsSync(path.join(bundledDir, 'node_modules'))) {
             try {
                 fs.cpSync(path.join(bundledDir, 'node_modules'), path.join(currentDir, 'node_modules'), { recursive: true });
             } catch { /* ignore */ }
@@ -78,6 +83,7 @@ function resolveServiceDir(configManager) {
         ensureFingerprintMarker(currentDir);
         return currentDir;
     }
+
 
     if (fs.existsSync(path.join(bundledDir, 'index.js'))) {
         try {
