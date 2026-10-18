@@ -61,5 +61,6 @@ linux:
 publish:
   provider: github
   owner: DeibydBarragan
-  repo: ignite-music
+  repo: ignite-music-desktop
   releaseType: release
+
