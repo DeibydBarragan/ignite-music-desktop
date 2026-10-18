@@ -76,6 +76,10 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
     generateApiSecret: () => ipcRenderer.invoke('config:generate-secret'),
     importConfigFile: () => ipcRenderer.invoke('config:import-file'),
     selectCookiesFile: () => ipcRenderer.invoke('config:select-cookies-file'),
+    saveCookiesFile: (data) => ipcRenderer.invoke('config:save-cookies-file', typeof data === 'string' ? { filePath: data } : data),
+    removeCookiesFile: () => ipcRenderer.invoke('config:remove-cookies-file'),
+    getCookiesStatus: () => ipcRenderer.invoke('config:get-cookies-status'),
+    parseConfigContent: (content, filename) => ipcRenderer.invoke('config:parse-content', { content, filename }),
 
     // Authentication & Gatekeeper
     loginWithDiscord: () => ipcRenderer.invoke('auth:login'),

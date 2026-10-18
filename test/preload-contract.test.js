@@ -56,6 +56,10 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
         assert.equal(typeof exposedApi.generateApiSecret, 'function');
         assert.equal(typeof exposedApi.importConfigFile, 'function');
         assert.equal(typeof exposedApi.selectCookiesFile, 'function');
+        assert.equal(typeof exposedApi.saveCookiesFile, 'function');
+        assert.equal(typeof exposedApi.removeCookiesFile, 'function');
+        assert.equal(typeof exposedApi.getCookiesStatus, 'function');
+        assert.equal(typeof exposedApi.parseConfigContent, 'function');
         assert.equal(typeof exposedApi.loginWithDiscord, 'function');
         assert.equal(typeof exposedApi.logout, 'function');
         assert.equal(typeof exposedApi.getCurrentUser, 'function');
@@ -147,6 +151,10 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
         assert.ok(registeredHandlers.has('updater:update-extractors'));
         assert.ok(registeredHandlers.has('config:import-file'));
         assert.ok(registeredHandlers.has('config:select-cookies-file'));
+        assert.ok(registeredHandlers.has('config:save-cookies-file'));
+        assert.ok(registeredHandlers.has('config:remove-cookies-file'));
+        assert.ok(registeredHandlers.has('config:get-cookies-status'));
+        assert.ok(registeredHandlers.has('config:parse-content'));
 
         // Verify ping response
         const pingFn = registeredHandlers.get('app:ping');

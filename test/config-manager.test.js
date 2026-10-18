@@ -102,6 +102,12 @@ describe('Fase 2: ConfigManager & Credentials Security Tests', () => {
         assert.equal(loaded.guildId, testConfig.guildId);
         assert.equal(loaded.apiSecret, testConfig.apiSecret);
         assert.equal(loaded.port, 3001);
+        assert.equal(loaded.minimizeToTray, false);
+
+        // Test explicit minimizeToTray: true
+        manager.saveConfig({ ...testConfig, minimizeToTray: true });
+        const loadedTrue = manager.loadConfig();
+        assert.equal(loadedTrue.minimizeToTray, true);
     });
 
     test('ConfigManager generates and atomically writes valid .env file for ignite-music', () => {
@@ -134,5 +140,37 @@ describe('Fase 2: ConfigManager & Credentials Security Tests', () => {
         assert.ok(envContent.includes('GUILD_ID=987654321098765432'));
         assert.ok(envContent.includes('PORT=3001'));
         assert.ok(envContent.includes('AUTO_TUNNEL=true'));
+    });
+
+    test('ConfigManager manages independent cookies.txt lifecycle', () => {
+        const manager = new ConfigManager(tmpDir);
+
+        // Initially no cookies
+        const initialStatus = manager.getCookiesStatus();
+        assert.equal(initialStatus.configured, false);
+
+        // Save by content
+        const cookieContent = '# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t1750000000\tSID\tsample';
+        const res = manager.saveCookiesFile(cookieContent, true);
+        assert.equal(res.success, true);
+        assert.ok(fs.existsSync(res.filePath));
+
+        // Verify status
+        const status = manager.getCookiesStatus();
+        assert.equal(status.configured, true);
+        assert.equal(status.path, res.filePath);
+        assert.ok(status.size > 0);
+
+        // Verify config updated
+        const cfg = manager.loadConfig();
+        assert.equal(cfg.cookiesFile, res.filePath);
+
+        // Remove cookies
+        const rmRes = manager.removeCookiesFile();
+        assert.equal(rmRes.success, true);
+        assert.equal(fs.existsSync(res.filePath), false);
+
+        const finalStatus = manager.getCookiesStatus();
+        assert.equal(finalStatus.configured, false);
     });
 });

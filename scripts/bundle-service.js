@@ -2,9 +2,25 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const targetDir = path.join(__dirname, '../resources/service/bundled');
 const sourceDir = path.resolve(__dirname, '../../ignite-music');
+
+function ensureFingerprint(dir) {
+    try {
+        const marker = path.join(dir, 'node_modules', '.musicbot-installed');
+        if (fs.existsSync(path.join(dir, 'node_modules')) && (!fs.existsSync(marker) || fs.readFileSync(marker, 'utf8').trim() === '')) {
+            const hash = crypto.createHash('sha256');
+            for (const file of ['package.json', 'package-lock.json']) {
+                const full = path.join(dir, file);
+                if (fs.existsSync(full)) hash.update(fs.readFileSync(full));
+            }
+            fs.writeFileSync(marker, hash.digest('hex'), 'utf8');
+            console.log('[bundle-service] Ensured .musicbot-installed marker.');
+        }
+    } catch { /* ignore */ }
+}
 
 function copyRecursive(src, dest, filterFn) {
     if (!fs.existsSync(src)) return;
@@ -28,6 +44,7 @@ function bundleService() {
 
     if (fs.existsSync(path.join(targetDir, 'index.js'))) {
         console.log('[bundle-service] Bundled snapshot already exists in resources/service/bundled.');
+        ensureFingerprint(targetDir);
         return;
     }
 
@@ -50,6 +67,7 @@ function bundleService() {
                 return name !== '.git' && name !== '.env';
             });
         }
+        ensureFingerprint(targetDir);
         console.log('[bundle-service] Service bundled successfully.');
     } else {
         console.warn(`[bundle-service] Source directory ${sourceDir} not found. Creating placeholder index.js...`);

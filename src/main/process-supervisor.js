@@ -124,7 +124,7 @@ class ProcessSupervisor extends EventEmitter {
         } catch { /* ignore */ }
     }
 
-    start(serviceDir, envOverrides = {}) {
+    start(serviceDir, envOverrides = {}, options = {}) {
         if (this.child && !this.child.killed) {
             return { success: false, error: 'SERVICE_ALREADY_RUNNING' };
         }
@@ -137,6 +137,8 @@ class ProcessSupervisor extends EventEmitter {
         // Clean up obsolete logs before starting
         this.rotateLogs(5);
 
+        // Wait for ready log by default unless explicitly disabled
+        this.waitForReady = options.waitForReady !== false;
         this.setState('starting');
         this.startedAt = Date.now();
         this.exitCode = null;
@@ -176,7 +178,9 @@ class ProcessSupervisor extends EventEmitter {
             });
 
             this.setupStreams(this.child);
-            this.setState('running');
+            if (!this.waitForReady) {
+                this.setState('running');
+            }
             return { success: true, pid: this.child.pid };
         } catch (err) {
             this.setState('crashed');
@@ -189,7 +193,8 @@ class ProcessSupervisor extends EventEmitter {
             if (!stream) return;
             stream.setEncoding('utf8');
             stream.on('data', (chunk) => {
-                const lines = chunk.split('\n');
+                const text = chunk.toString();
+                const lines = text.split('\n');
                 for (const line of lines) {
                     if (!line.trim()) continue;
                     this.emitLog({
@@ -197,6 +202,12 @@ class ProcessSupervisor extends EventEmitter {
                         text: line,
                         timestamp: new Date().toISOString(),
                     });
+                }
+
+                if (type === 'stdout' && this.waitForReady && this.state === 'starting') {
+                    if (text.includes('REST API server listening') || text.includes('"msg":"REST API server listening')) {
+                        this.setState('running');
+                    }
                 }
             });
         };
@@ -223,7 +234,9 @@ class ProcessSupervisor extends EventEmitter {
 
             const isManualStop = this.state === 'stopping';
 
-            if (isManualStop) {
+            if (this.isRestarting) {
+                this.setState('starting');
+            } else if (isManualStop) {
                 this.setState('stopped');
             } else {
                 this.setState(code === 0 ? 'stopped' : 'crashed');
@@ -294,9 +307,14 @@ class ProcessSupervisor extends EventEmitter {
         });
     }
 
-    async restart(serviceDir, envOverrides) {
-        await this.stop();
-        return this.start(serviceDir, envOverrides);
+    async restart(serviceDir, envOverrides = {}, options = {}) {
+        this.isRestarting = true;
+        try {
+            await this.stop();
+            return this.start(serviceDir, envOverrides, options);
+        } finally {
+            this.isRestarting = false;
+        }
     }
 }
 

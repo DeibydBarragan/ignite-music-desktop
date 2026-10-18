@@ -22,6 +22,9 @@ export const Icons = {
     RotateCw: (size = 14, className = '') =>
         createSvg('<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>', size, className),
 
+    Loader2: (size = 14, className = '') =>
+        createSvg('<path d="M21 12a9 9 0 1 1-6.219-8.56"/>', size, className),
+
     Cloud: (size = 18, className = '') =>
         createSvg('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', size, className),
 
@@ -75,4 +78,16 @@ export const Icons = {
 
     Search: (size = 14, className = '') =>
         createSvg('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', size, className),
+
+    FileText: (size = 16, className = '') =>
+        createSvg('<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><line x1="10" x2="8" y1="9" y2="9"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/>', size, className),
+
+    UploadCloud: (size = 20, className = '') =>
+        createSvg('<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/>', size, className),
+
+    CheckCircle2: (size = 18, className = '') =>
+        createSvg('<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>', size, className),
+
+    AlertCircle: (size = 18, className = '') =>
+        createSvg('<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>', size, className),
 };

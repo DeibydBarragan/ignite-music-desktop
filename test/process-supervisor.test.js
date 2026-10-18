@@ -91,7 +91,7 @@ describe('Fase 4: Process Supervisor Tests', () => {
         const logs = [];
         supervisor.on('log', (entry) => logs.push(entry));
 
-        const startRes = supervisor.start(tmpDir);
+        const startRes = supervisor.start(tmpDir, {}, { waitForReady: false });
         assert.equal(startRes.success, true);
         assert.ok(startRes.pid > 0);
         assert.equal(supervisor.getStatus().state, 'running');
@@ -198,4 +198,72 @@ describe('Fase 4: Process Supervisor Tests', () => {
         assert.equal(fs.existsSync(oldFile), false, 'Old log file should be removed');
         assert.equal(fs.existsSync(recentFile), true, 'Recent log file should be kept');
     });
+
+    test('supervisor with waitForReady remains starting until REST API server listening log is emitted', async () => {
+        const supervisor = new ProcessSupervisor();
+
+        const readyScript = `
+            console.log('Booting worker...');
+            setTimeout(() => {
+                console.log('{"level":"ok","shard":"0","scope":"api","msg":"REST API server listening on http://0.0.0.0:3001"}');
+            }, 100);
+            setInterval(() => {}, 1000);
+        `;
+        fs.writeFileSync(path.join(tmpDir, 'index.js'), readyScript, 'utf8');
+
+        const startRes = supervisor.start(tmpDir, {}, { waitForReady: true });
+        assert.equal(startRes.success, true);
+        assert.equal(supervisor.getStatus().state, 'starting');
+
+        // Wait for log emission and state transition
+        await new Promise((resolve) => {
+            supervisor.on('status-changed', (s) => {
+                if (s.state === 'running') resolve();
+            });
+        });
+
+        assert.equal(supervisor.getStatus().state, 'running');
+        await supervisor.stop(2000);
+    });
+
+    test('supervisor restart preserves starting state and waits for ready log', async () => {
+        const supervisor = new ProcessSupervisor();
+
+        const readyScript = `
+            console.log('Booting worker...');
+            setTimeout(() => {
+                console.log('{"level":"ok","shard":"0","scope":"api","msg":"REST API server listening on http://0.0.0.0:3001"}');
+            }, 80);
+            setInterval(() => {}, 1000);
+            process.on('SIGTERM', () => process.exit(0));
+        `;
+        fs.writeFileSync(path.join(tmpDir, 'index.js'), readyScript, 'utf8');
+
+        await supervisor.start(tmpDir);
+        await new Promise((resolve) => {
+            supervisor.on('status-changed', (s) => {
+                if (s.state === 'running') resolve();
+            });
+        });
+        assert.equal(supervisor.getStatus().state, 'running');
+
+        // Trigger restart
+        const restartPromise = supervisor.restart(tmpDir);
+
+        // Wait for ready log after restart
+        await new Promise((resolve) => {
+            const onStatus = (s) => {
+                if (s.state === 'running') {
+                    supervisor.off('status-changed', onStatus);
+                    resolve();
+                }
+            };
+            supervisor.on('status-changed', onStatus);
+        });
+
+        await restartPromise;
+        assert.equal(supervisor.getStatus().state, 'running');
+        await supervisor.stop(2000);
+    });
 });
+

@@ -7,21 +7,14 @@ export function initTunnelCard() {
     const tunnelStatusLabel = document.getElementById('tunnelStatusLabel');
     const tunnelUrlInput = document.getElementById('tunnelUrlDisplay');
     const btnCopyTunnelUrl = document.getElementById('btnCopyTunnelUrl');
-    const btnOpenTunnelUrl = document.getElementById('btnOpenTunnelUrl');
     const tunnelCard = document.querySelector('.tunnel-card-box');
+    const tunnelCloudIconSlot = document.getElementById('tunnelCloudIconSlot');
 
     let currentUrl = null;
 
     function updateTunnelUI(status) {
         const state = status.state || 'stopped';
         currentUrl = status.url || null;
-
-        if (tunnelUrlInput) {
-            tunnelUrlInput.value = currentUrl || 'Esperando inicio del servicio...';
-        }
-
-        if (btnCopyTunnelUrl) btnCopyTunnelUrl.disabled = !currentUrl;
-        if (btnOpenTunnelUrl) btnOpenTunnelUrl.disabled = !currentUrl;
 
         if (state === 'connected' && currentUrl) {
             if (tunnelDot) tunnelDot.className = 'status-indicator status-online';
@@ -30,13 +23,23 @@ export function initTunnelCard() {
                 tunnelStatusLabel.textContent = 'Túnel Activo';
                 tunnelStatusLabel.style.color = 'var(--status-online)';
             }
+            if (tunnelCloudIconSlot) tunnelCloudIconSlot.innerHTML = Icons.Cloud(18);
+            if (tunnelUrlInput) tunnelUrlInput.value = currentUrl;
+            if (btnCopyTunnelUrl) btnCopyTunnelUrl.disabled = false;
         } else if (state === 'connecting') {
             if (tunnelDot) tunnelDot.className = 'status-indicator status-starting';
             if (tunnelCard) tunnelCard.classList.remove('tunnel-active');
             if (tunnelStatusLabel) {
-                tunnelStatusLabel.textContent = 'Conectando con Cloudflare...';
+                tunnelStatusLabel.textContent = 'Conectando túnel...';
                 tunnelStatusLabel.style.color = 'var(--status-warning)';
             }
+            if (tunnelCloudIconSlot) {
+                tunnelCloudIconSlot.innerHTML = `<span class="spin">${Icons.Loader2(18)}</span>`;
+            }
+            if (tunnelUrlInput) {
+                tunnelUrlInput.value = 'Conectando túnel seguro de Cloudflare...';
+            }
+            if (btnCopyTunnelUrl) btnCopyTunnelUrl.disabled = true;
         } else if (state === 'error') {
             if (tunnelDot) tunnelDot.className = 'status-indicator status-crashed';
             if (tunnelCard) tunnelCard.classList.remove('tunnel-active');
@@ -44,6 +47,11 @@ export function initTunnelCard() {
                 tunnelStatusLabel.textContent = 'Error en Túnel';
                 tunnelStatusLabel.style.color = '#ef4444';
             }
+            if (tunnelCloudIconSlot) tunnelCloudIconSlot.innerHTML = Icons.Cloud(18);
+            if (tunnelUrlInput) {
+                tunnelUrlInput.value = 'No se pudo iniciar el túnel de Cloudflare';
+            }
+            if (btnCopyTunnelUrl) btnCopyTunnelUrl.disabled = true;
         } else {
             if (tunnelDot) tunnelDot.className = 'status-indicator status-offline';
             if (tunnelCard) tunnelCard.classList.remove('tunnel-active');
@@ -51,6 +59,11 @@ export function initTunnelCard() {
                 tunnelStatusLabel.textContent = 'Inactivo';
                 tunnelStatusLabel.style.color = 'var(--muted)';
             }
+            if (tunnelCloudIconSlot) tunnelCloudIconSlot.innerHTML = Icons.Cloud(18);
+            if (tunnelUrlInput) {
+                tunnelUrlInput.value = 'Esperando inicio del servicio...';
+            }
+            if (btnCopyTunnelUrl) btnCopyTunnelUrl.disabled = true;
         }
     }
 
@@ -73,14 +86,6 @@ export function initTunnelCard() {
         });
     }
 
-    if (btnOpenTunnelUrl) {
-        btnOpenTunnelUrl.addEventListener('click', () => {
-            if (currentUrl) {
-                window.open(currentUrl, '_blank');
-            }
-        });
-    }
-
     // Listeners from supervisor
     if (window.igniteLauncher && typeof window.igniteLauncher.onTunnelStatus === 'function') {
         window.igniteLauncher.onTunnelStatus((status) => {
@@ -98,7 +103,6 @@ export function initTunnelCard() {
                 tunnelStatusLabel.style.color = '#10b981';
             }
             if (btnCopyTunnelUrl) btnCopyTunnelUrl.disabled = false;
-            if (btnOpenTunnelUrl) btnOpenTunnelUrl.disabled = false;
         });
     }
 

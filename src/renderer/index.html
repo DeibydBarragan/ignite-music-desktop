@@ -3,60 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:;">
     <title>Ignite Music Launcher</title>
+    <link rel="stylesheet" href="css/fonts.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
     <header class="app-header">
-        <div class="brand">
-            <img src="assets/icon.png" alt="Ignite Music" class="brand-logo-img">
-            <div class="brand-text">
-                <span class="brand-name">Ignite Music</span>
-                <span class="brand-version" id="appVersion">v1.0.0</span>
-            </div>
-        </div>
-
-        <div class="header-meta">
-            <!-- User Profile Badge (cloning ignite-frontend UserBadge) -->
-            <div class="user-badge-wrapper" id="userBadge" style="display: none;">
-                <div class="user-badge-panel">
-                    <div class="user-avatar-container">
-                        <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
-                        <span class="user-online-dot"></span>
-                    </div>
-                    <div class="user-text-info">
-                        <span id="userName" class="user-name">Usuario</span>
-                        <span id="userRole" class="badge-role badge-admin">Miembro</span>
-                    </div>
+        <div class="app-header-inner">
+            <div class="brand">
+                <img src="assets/icon.png" alt="Ignite Music" class="brand-logo-img">
+                <div class="brand-text">
+                    <span class="brand-name">Ignite Music</span>
+                    <span class="brand-version" id="appVersion">v1.0.0</span>
                 </div>
-                <button type="button" class="btn-logout-danger" id="btnLogout" title="Cerrar sesión" aria-label="Cerrar sesión">
-                    <span id="logoutIconSlot"></span>
-                    <span class="btn-logout-text">Salir</span>
+            </div>
+
+            <div class="header-meta">
+                <!-- User Profile Badge (cloning ignite-frontend UserBadge) -->
+                <div class="user-badge-wrapper" id="userBadge" style="display: none;">
+                    <div class="user-badge-panel">
+                        <div class="user-avatar-container">
+                            <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+                            <span class="user-online-dot"></span>
+                        </div>
+                        <div class="user-text-info">
+                            <span id="userName" class="user-name">Usuario</span>
+                            <span id="userRole" class="badge-role badge-admin">Miembro</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-logout-danger" id="btnLogout" title="Cerrar sesión" aria-label="Cerrar sesión">
+                        <span id="logoutIconSlot"></span>
+                        <span class="btn-logout-text">Salir</span>
+                    </button>
+                </div>
+
+                <!-- Hidden badge anchors for JS telemetry compatibility without visual clutter -->
+                <div id="configBadge" style="display: none !important;">
+                    <span class="badge-dot" id="configDot"></span>
+                    <span id="configStatusLabel"></span>
+                </div>
+                <div id="serviceBadge" style="display: none !important;">
+                    <span class="badge-dot" id="serviceDot"></span>
+                    <span id="serviceStatusLabel"></span>
+                </div>
+
+                <button class="btn btn-secondary" id="btnOpenSettings" title="Configuración">
+                    <span id="settingsIconSlot"></span>
+                    <span>Configuración</span>
                 </button>
             </div>
-
-            <!-- Service & Config Badges (cloning ignite-frontend TabServiceBadge) -->
-            <div class="tab-service-badge tab-service-badge-warning" id="configBadge">
-                <span class="badge-dot-container">
-                    <span class="badge-dot-ping"></span>
-                    <span class="badge-dot active" id="configDot"></span>
-                </span>
-                <span id="configStatusLabel">Verificando...</span>
-            </div>
-
-            <div class="tab-service-badge tab-service-badge-online" id="serviceBadge">
-                <span class="badge-dot-container">
-                    <span class="badge-dot-ping"></span>
-                    <span class="badge-dot active" id="serviceDot"></span>
-                </span>
-                <span id="serviceStatusLabel">Launcher Listo</span>
-            </div>
-
-            <button class="btn btn-secondary" id="btnOpenSettings" title="Configuración">
-                <span id="settingsIconSlot"></span>
-                <span>Configuración</span>
-            </button>
         </div>
     </header>
 
@@ -88,17 +87,13 @@
                 <span id="discordLoginIconSlot"></span>
                 <span>Iniciar Sesión con Discord</span>
             </button>
-            <div class="redirect-uri-pill">
-                <span>Redirect URI para Discord Portal:</span>
-                <code>http://127.0.0.1:53134/callback</code>
-            </div>
         </section>
 
         <!-- Access Denied View -->
         <section class="card-center" id="deniedView" style="display: none;">
             <div class="card-icon-hero icon-denied" id="deniedIconSlot"></div>
-            <h2 class="card-title-hero" style="color: #f87171;">Acceso Denegado</h2>
-            <p class="card-subtitle-hero">Tu cuenta no cumple con los permisos requeridos o no pertenece al servidor configurado.</p>
+            <h2 class="card-title-hero" style="color: #f87171;" id="deniedTitle">Acceso Denegado</h2>
+            <p class="card-subtitle-hero" id="deniedSubtitle">Tu cuenta no cumple con los permisos requeridos o no pertenece al servidor configurado.</p>
             <div class="denied-info-box">
                 <div>Cuenta autenticada: <strong id="deniedUsername">@usuario</strong></div>
                 <div>ID Servidor objetivo: <strong id="deniedGuildId" class="font-mono">--</strong></div>
@@ -120,7 +115,7 @@
             <!-- Zona 1: Command & Gateway Deck (Grid 50% / 50%) -->
             <div class="dashboard-deck-top">
                 <!-- Bot Service Controls -->
-                <section class="card glass-panel service-control-card">
+                <section class="card glass-panel service-control-card" id="serviceControlCard">
                     <div class="service-header">
                         <div class="service-status-box">
                             <span class="status-indicator status-offline" id="botStatusDot"></span>
@@ -141,15 +136,15 @@
                         <div class="service-actions">
                             <button class="btn btn-primary" id="btnStartService">
                                 <span id="startServiceIconSlot"></span>
-                                <span>Iniciar Bot</span>
+                                <span id="startServiceText">Iniciar Bot</span>
                             </button>
                             <button class="btn btn-secondary" id="btnRestartService" disabled>
                                 <span id="restartServiceIconSlot"></span>
-                                <span>Reiniciar</span>
+                                <span id="restartServiceText">Reiniciar</span>
                             </button>
                             <button class="btn btn-danger" id="btnStopService" disabled>
                                 <span id="stopServiceIconSlot"></span>
-                                <span>Detener</span>
+                                <span id="stopServiceText">Detener</span>
                             </button>
                         </div>
                     </div>
@@ -174,10 +169,6 @@
                                 <span id="copyTunnelIconSlot"></span>
                                 <span id="copyTunnelText">Copiar URL</span>
                             </button>
-                            <button class="btn btn-outline btn-sm" id="btnOpenTunnelUrl" disabled>
-                                <span id="openTunnelIconSlot"></span>
-                                <span>Abrir</span>
-                            </button>
                         </div>
                     </div>
                 </section>
@@ -189,7 +180,7 @@
                 <section class="card glass-panel terminal-card">
                     <div class="terminal-header">
                         <div class="terminal-title">
-                            <span id="terminalIconSlot"></span>
+                            <div class="terminal-icon-badge" id="terminalIconSlot"></div>
                             <span>Consola de Logs en Tiempo Real</span>
                         </div>
                         <div class="terminal-actions">
@@ -264,17 +255,126 @@
                             <span>Probar Ping IPC</span>
                         </button>
                     </div>
+                </aside>
+            </div>
+        </div>
 
-                    <div class="sidebar-vitals-divider"></div>
+        <!-- First-Run Onboarding Wizard Modal -->
+        <div class="modal-overlay glass-backdrop" id="onboardingModal" style="display: none;">
+            <div class="modal-card glass-modal-panel onboarding-modal-panel">
+                <!-- Step 1: Decision (Manual vs Import) -->
+                <div id="onboardingStepChoice" class="onboarding-step-view">
+                    <div class="onboarding-hero-header">
+                        <div class="onboarding-hero-badge">
+                            <img src="assets/icon.png" alt="Ignite Music" class="onboarding-hero-icon">
+                        </div>
+                        <h2 class="onboarding-hero-title">Bienvenido a Ignite Music Launcher</h2>
+                        <p class="onboarding-hero-subtitle">Elige cómo prefieres comenzar a configurar tu servidor y credenciales del bot de música.</p>
+                    </div>
 
-                    <!-- System Tray Tip -->
-                    <div class="vital-tray-tip">
-                        <span class="notice-icon" id="noticeIconSlot"></span>
-                        <div class="vital-tray-text">
-                            <strong>System Tray:</strong> Al presionar <strong>X</strong>, la app se minimiza a la bandeja del sistema.
+                    <div class="onboarding-choices-container">
+                        <button type="button" class="onboarding-card-btn" id="btnOnboardingManual">
+                            <div class="onboarding-card-icon" id="onboardingManualIconSlot"></div>
+                            <div class="onboarding-card-body">
+                                <h4 class="onboarding-card-title">Configurar manualmente</h4>
+                                <p class="onboarding-card-desc">Ingresa tus tokens de Discord, IDs y parámetros paso a paso en el formulario del sistema.</p>
+                            </div>
+                            <div class="onboarding-card-arrow">→</div>
+                        </button>
+
+                        <button type="button" class="onboarding-card-btn" id="btnOnboardingImport">
+                            <div class="onboarding-card-icon" id="onboardingImportIconSlot"></div>
+                            <div class="onboarding-card-body">
+                                <h4 class="onboarding-card-title">Importar configuración</h4>
+                                <p class="onboarding-card-desc">Carga tu archivo de credenciales (.env o .json) y tus cookies de YouTube en espacios dedicados.</p>
+                            </div>
+                            <div class="onboarding-card-arrow">→</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Dual File Import View -->
+                <div id="onboardingStepImport" class="onboarding-step-view" style="display: none;">
+                    <div class="modal-header">
+                        <div class="modal-header-left">
+                            <div class="modal-icon-badge" id="onboardingImportHeaderIconSlot"></div>
+                            <div>
+                                <h3 class="modal-title">Importar Configuración</h3>
+                                <p class="modal-subtitle">Arrastra o selecciona tus archivos para configurar el bot automáticamente.</p>
+                            </div>
                         </div>
                     </div>
-                </aside>
+
+                    <div class="modal-body custom-scrollbar">
+                        <div id="onboardingAlert" class="alert-box" style="display: none;"></div>
+
+                        <div class="onboarding-dropzones-list">
+                            <!-- Espacio 1: Archivo de Configuración (.env o .json) -->
+                            <div class="dropzone-block">
+                                <div class="dropzone-header-row">
+                                    <label class="dropzone-label">1. Archivo de configuración <strong style="color: #ef4444;">*</strong></label>
+                                    <span class="badge-pill-status pill-status-offline" id="badgeConfigStatus">Requerido</span>
+                                </div>
+                                <div class="file-dropzone" id="dropzoneConfig" tabindex="0">
+                                    <div class="dropzone-idle" id="dropzoneConfigIdle">
+                                        <div class="dropzone-icon-slot" id="dropzoneConfigIconSlot"></div>
+                                        <p class="dropzone-prompt">Arrastra aquí tu archivo <strong>.env</strong> o <strong>.json</strong></p>
+                                        <span class="dropzone-subtext">o haz clic para examinar archivos locales</span>
+                                    </div>
+                                    <div class="dropzone-loaded" id="dropzoneConfigLoaded" style="display: none;">
+                                        <div class="dropzone-file-chip">
+                                            <div class="dropzone-chip-icon" id="chipConfigIconSlot"></div>
+                                            <div class="dropzone-chip-info">
+                                                <strong class="dropzone-filename font-mono" id="labelConfigFilename">archivo.env</strong>
+                                                <span class="dropzone-filemeta" id="labelConfigMeta">Detectando...</span>
+                                            </div>
+                                            <button type="button" class="btn-chip-remove" id="btnRemoveConfigFile" title="Quitar archivo">✕</button>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="fileInputConfig" accept=".env,.json,application/json" style="display: none;">
+                                </div>
+                                <small class="dropzone-helper">Contiene <code>DISCORD_TOKEN</code>, <code>CLIENT_ID</code>, <code>GUILD_ID</code>, etc. <em>(Las referencias a cookies se omiten automáticamente)</em>.</small>
+                            </div>
+
+                            <!-- Espacio 2: Archivo de Cookies (cookies.txt) -->
+                            <div class="dropzone-block" style="margin-top: 16px;">
+                                <div class="dropzone-header-row">
+                                    <label class="dropzone-label">2. Archivo de cookies de YouTube (cookies.txt)</label>
+                                    <span class="badge-pill-status pill-status-offline" id="badgeCookiesStatus">Opcional</span>
+                                </div>
+                                <div class="file-dropzone" id="dropzoneCookies" tabindex="0">
+                                    <div class="dropzone-idle" id="dropzoneCookiesIdle">
+                                        <div class="dropzone-icon-slot" id="dropzoneCookiesIconSlot"></div>
+                                        <p class="dropzone-prompt">Arrastra aquí tu <strong>cookies.txt</strong></p>
+                                        <span class="dropzone-subtext">o haz clic para examinar (formato Netscape)</span>
+                                    </div>
+                                    <div class="dropzone-loaded" id="dropzoneCookiesLoaded" style="display: none;">
+                                        <div class="dropzone-file-chip">
+                                            <div class="dropzone-chip-icon" id="chipCookiesIconSlot"></div>
+                                            <div class="dropzone-chip-info">
+                                                <strong class="dropzone-filename font-mono" id="labelCookiesFilename">cookies.txt</strong>
+                                                <span class="dropzone-filemeta" id="labelCookiesMeta">Cargado ✓</span>
+                                            </div>
+                                            <button type="button" class="btn-chip-remove" id="btnRemoveCookiesFile" title="Quitar cookies">✕</button>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="fileInputCookies" accept=".txt,text/plain" style="display: none;">
+                                </div>
+                                <small class="dropzone-helper">Evita el bloqueo de YouTube (<em>"Sign in to confirm you're not a bot"</em>). Se almacena en la carpeta privada de datos de la app.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--border);">
+                        <button type="button" class="btn btn-outline" id="btnOnboardingBack">
+                            <span>← Volver</span>
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnOnboardingApply" disabled>
+                            <span id="onboardingApplyIconSlot"></span>
+                            <span>Aplicar y Continuar</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -289,10 +389,10 @@
                             <p class="modal-subtitle">Credenciales protegidas y herramientas de mantenimiento.</p>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button type="button" class="btn btn-secondary btn-sm" id="btnImportConfig">
+                    <div class="modal-header-actions">
+                        <button type="button" class="btn-import-config" id="btnImportConfig" title="Importar configuración desde archivo .env o .json">
                             <span id="importConfigIconSlot"></span>
-                            <span>Importar .env / .json</span>
+                            <span>Importar Config</span>
                         </button>
                         <button class="modal-close" id="btnCloseSettings" title="Cerrar">
                             <span id="closeSettingsIconSlot"></span>
@@ -303,11 +403,11 @@
                     <div id="settingsAlert" class="alert-box" style="display: none;"></div>
                     <form id="settingsForm">
                         <div class="form-group">
-                            <label for="inputToken" class="form-label">Discord Bot Token <span class="required">*</span></label>
-                            <div class="input-with-action">
-                                <input type="password" id="inputToken" class="form-control glass-input" placeholder="MTAy..." autocomplete="off">
-                                <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputToken"></button>
+                            <div class="form-label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <label for="inputToken" class="form-label" style="margin-bottom: 0;">Discord Bot Token <span class="required">*</span></label>
+                                <span id="statusBadgeToken" class="badge-pill-status pill-status-offline">Sin configurar</span>
                             </div>
+                            <input type="password" id="inputToken" class="form-control glass-input" placeholder="MTAy... Ingresa nuevo token para configurar o cambiar" autocomplete="off">
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -320,17 +420,20 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="inputClientSecret" class="form-label">Client Secret <span class="required">*</span></label>
-                            <div class="input-with-action">
-                                <input type="password" id="inputClientSecret" class="form-control glass-input" placeholder="••••••••" autocomplete="off">
-                                <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputClientSecret"></button>
+                            <div class="form-label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <label for="inputClientSecret" class="form-label" style="margin-bottom: 0;">Client Secret <span class="required">*</span></label>
+                                <span id="statusBadgeClientSecret" class="badge-pill-status pill-status-offline">Sin configurar</span>
                             </div>
+                            <input type="password" id="inputClientSecret" class="form-control glass-input" placeholder="••••••••" autocomplete="off">
                             <small style="color: var(--muted); font-size: 0.75rem; display: block; margin-top: 5px;">Agrega en Discord Portal &gt; OAuth2 &gt; Redirects: <code style="color: #c084fc; user-select: all; font-family: var(--font-mono);">http://127.0.0.1:53134/callback</code></small>
                         </div>
                         <div class="form-group">
-                            <label for="inputApiSecret" class="form-label">API Secret (Mínimo 32 caracteres) <span class="required">*</span></label>
+                            <div class="form-label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <label for="inputApiSecret" class="form-label" style="margin-bottom: 0;">API Secret (Mínimo 32 caracteres) <span class="required">*</span></label>
+                                <span id="statusBadgeApiSecret" class="badge-pill-status pill-status-offline">Sin configurar</span>
+                            </div>
                             <div class="input-with-action">
-                                <input type="text" id="inputApiSecret" class="form-control glass-input" placeholder="64-hex secret..." autocomplete="off">
+                                <input type="password" id="inputApiSecret" class="form-control glass-input" placeholder="64-hex secret..." autocomplete="off">
                                 <button type="button" class="btn btn-secondary" id="btnGenSecret">
                                     <span id="genSecretIconSlot"></span>
                                     <span>Generar</span>
@@ -386,11 +489,31 @@
                                 <input type="text" id="inputSupabaseUrl" class="form-control glass-input" placeholder="https://xxxxxxxx.supabase.co" autocomplete="off">
                             </div>
                             <div class="form-group">
-                                <label for="inputSupabaseKey" class="form-label">Supabase Anon / Service Key</label>
-                                <div class="input-with-action">
-                                    <input type="password" id="inputSupabaseKey" class="form-control glass-input" placeholder="eyJhbGciOi..." autocomplete="off">
-                                    <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputSupabaseKey"></button>
+                                <div class="form-label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label for="inputSupabaseKey" class="form-label" style="margin-bottom: 0;">Supabase Anon / Service Key</label>
+                                    <span id="statusBadgeSupabaseKey" class="badge-pill-status pill-status-offline">Sin configurar</span>
                                 </div>
+                                <input type="password" id="inputSupabaseKey" class="form-control glass-input" placeholder="eyJhbGciOi... (Opcional)" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <!-- System Tray Window Behavior -->
+                        <div class="form-section-divider" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
+                            <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; color: var(--foreground); display: flex; align-items: center; gap: 6px;">
+                                <span>⚙️ Comportamiento del Sistema</span>
+                            </h4>
+                            <p style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px;">
+                                Configura la respuesta al hacer clic en el botón de cerrar la ventana.
+                            </p>
+                            <div class="switch-setting-row" style="margin-top: 8px;">
+                                <div class="switch-setting-info">
+                                    <strong class="switch-setting-title">Minimizar a la bandeja del sistema (System Tray)</strong>
+                                    <p class="switch-setting-desc">Al hacer clic en [X], la app seguirá ejecutándose y reproduciendo en segundo plano. Si se desmarca, al cerrar la ventana saldrá por completo.</p>
+                                </div>
+                                <label class="glass-switch" title="Activar/Desactivar minimizado a la bandeja">
+                                    <input type="checkbox" id="checkboxMinimizeToTray">
+                                    <span class="switch-slider"></span>
+                                </label>
                             </div>
                         </div>
                     </form>
@@ -439,6 +562,13 @@
                         <div class="confirm-user-desc">Sesión activa actual</div>
                     </div>
                 </div>
+                <div id="logoutServiceRunningWarning" class="alert-box alert-warning logout-service-warning" style="display: none;">
+                    <span class="logout-warning-icon">⚠️</span>
+                    <div>
+                        <strong>El servicio de Ignite Music está en ejecución</strong>
+                        <p style="margin: 2px 0 0; font-size: 0.78rem; opacity: 0.9;">Al cerrar sesión, el bot y su túnel se detendrán automáticamente.</p>
+                    </div>
+                </div>
                 <div class="modal-footer confirm-dialog-footer">
                     <button type="button" class="btn btn-outline" id="btnCancelLogout">Cancelar</button>
                     <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
@@ -458,7 +588,7 @@
     </main>
 
     <footer class="app-footer">
-        <div>Ignite Music Desktop Supervisor • Arquitectura Local Resiliente</div>
+        <div>Ignite Music Desktop Server</div>
         <div>DeibydBarragan / ignite-music</div>
     </footer>
 

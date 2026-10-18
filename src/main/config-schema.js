@@ -14,6 +14,7 @@ const DEFAULT_CONFIG = {
     cookiesFromBrowser: '',
     supabaseUrl: '',
     supabaseKey: '',
+    minimizeToTray: false,
 };
 
 /**

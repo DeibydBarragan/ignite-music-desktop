@@ -1,11 +1,13 @@
 'use strict';
 
 import { initSettingsModal } from './settings-modal.js';
+import { initOnboardingModal } from './onboarding-modal.js';
 import { initAuthView } from './auth-view.js';
 import { initLogViewer } from './log-viewer.js';
 import { initServiceControls } from './service-controls.js';
 import { initTunnelCard } from './tunnel-card.js';
 import { initUpdateBanner } from './update-banner.js';
+import { showToast } from './toast.js';
 import { Icons } from './icons.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -35,8 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (tunnelCloudIconSlot) tunnelCloudIconSlot.innerHTML = Icons.Cloud(18);
     const copyTunnelIconSlot = document.getElementById('copyTunnelIconSlot');
     if (copyTunnelIconSlot) copyTunnelIconSlot.innerHTML = Icons.Copy(13);
-    const openTunnelIconSlot = document.getElementById('openTunnelIconSlot');
-    if (openTunnelIconSlot) openTunnelIconSlot.innerHTML = Icons.ExternalLink(13);
 
     const terminalIconSlot = document.getElementById('terminalIconSlot');
     if (terminalIconSlot) terminalIconSlot.innerHTML = Icons.Terminal(15);
@@ -47,8 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const pingIconSlot = document.getElementById('pingIconSlot');
     if (pingIconSlot) pingIconSlot.innerHTML = Icons.RotateCw(13);
-    const noticeIconSlot = document.getElementById('noticeIconSlot');
-    if (noticeIconSlot) noticeIconSlot.innerHTML = Icons.Sparkles(16);
 
     // Populate modals & update banner icons (Phase 5)
     const settingsModalHeaderIconSlot = document.getElementById('settingsModalHeaderIconSlot');
@@ -109,8 +107,85 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTunnelCard();
     initUpdateBanner();
 
-    const settings = initSettingsModal(async () => {
-        await evaluateAccess();
+    // Dual-readiness toast coordinator: triggers once when both bot and Cloudflare tunnel are active
+    let currentBotState = 'stopped';
+    let currentTunnelState = 'stopped';
+    let isStartingSequence = false;
+    let hasShownReadyToast = false;
+
+    function checkDualReadyConfirmation() {
+        if (!isStartingSequence || hasShownReadyToast) return;
+        if (currentBotState === 'running' && currentTunnelState === 'connected') {
+            hasShownReadyToast = true;
+            isStartingSequence = false;
+            showToast(
+                'Servicios en Línea',
+                'El bot de Ignite Music y el túnel de Cloudflare se han iniciado con éxito.',
+                'success',
+                5000
+            );
+        }
+    }
+
+    if (window.igniteLauncher && typeof window.igniteLauncher.onStatusChange === 'function') {
+        window.igniteLauncher.onStatusChange((status) => {
+            currentBotState = status?.state || 'stopped';
+            if (currentBotState === 'starting') {
+                isStartingSequence = true;
+                hasShownReadyToast = false;
+            } else if (currentBotState === 'stopped' || currentBotState === 'crashed') {
+                isStartingSequence = false;
+                hasShownReadyToast = false;
+            }
+            checkDualReadyConfirmation();
+        });
+    }
+
+    if (window.igniteLauncher && typeof window.igniteLauncher.onTunnelStatus === 'function') {
+        window.igniteLauncher.onTunnelStatus((status) => {
+            currentTunnelState = status?.state || 'stopped';
+            if (currentTunnelState === 'connecting') {
+                isStartingSequence = true;
+            } else if (currentTunnelState === 'stopped' || currentTunnelState === 'error') {
+                isStartingSequence = false;
+                hasShownReadyToast = false;
+            }
+            checkDualReadyConfirmation();
+        });
+    }
+
+    if (window.igniteLauncher && typeof window.igniteLauncher.onTunnelUrl === 'function') {
+        window.igniteLauncher.onTunnelUrl((url) => {
+            if (url) {
+                currentTunnelState = 'connected';
+                checkDualReadyConfirmation();
+            }
+        });
+    }
+
+    let onboarding = null;
+
+    const settings = initSettingsModal({
+        onSaveSuccess: async () => {
+            await evaluateAccess();
+        },
+        onClose: async () => {
+            try {
+                const config = await window.igniteLauncher.getConfig();
+                if (!config?.isConfigured && onboarding) {
+                    onboarding.openModal();
+                }
+            } catch { /* ignore */ }
+        },
+    });
+
+    onboarding = initOnboardingModal({
+        onManualSelected: () => {
+            settings.openModal();
+        },
+        onConfigApplied: async () => {
+            await evaluateAccess();
+        },
     });
 
     const auth = initAuthView({
@@ -151,9 +226,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!config.isConfigured) {
             auth.showView('login');
             auth.renderUserBadge(null);
-            settings.openModal();
+            onboarding.openModal();
             return;
         }
+
+        onboarding.closeModal();
 
         const currentUser = await window.igniteLauncher.getCurrentUser();
         if (!currentUser) {
@@ -163,13 +240,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         try {
-            const membership = await window.igniteLauncher.checkMembership();
+            let membership = await window.igniteLauncher.checkMembership();
+
+            // Resiliency: if an initial network failure occurred on cold start, auto-retry once after 400ms
+            if (!membership?.isMember && membership?.error?.startsWith('NETWORK_ERROR')) {
+                await new Promise((r) => setTimeout(r, 400));
+                membership = await window.igniteLauncher.checkMembership();
+            }
+
             auth.renderUserBadge(currentUser, membership);
 
-            if (membership.isMember) {
+            if (membership?.isMember) {
                 auth.showView('dashboard');
             } else {
-                auth.setDeniedInfo(currentUser.username, config.guildId);
+                auth.setDeniedInfo(currentUser.username, config.guildId, membership?.error);
                 auth.showView('denied');
             }
         } catch (err) {

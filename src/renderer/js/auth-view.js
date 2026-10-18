@@ -1,5 +1,7 @@
 'use strict';
 
+import { Icons } from './icons.js';
+
 export function initAuthView({ onLoginSuccess, onLogout, onRecheck }) {
     const userBadge = document.getElementById('userBadge');
     const userAvatar = document.getElementById('userAvatar');
@@ -50,9 +52,19 @@ export function initAuthView({ onLoginSuccess, onLogout, onRecheck }) {
         }
     }
 
-    function setDeniedInfo(username, guildId) {
+    function setDeniedInfo(username, guildId, error = null) {
         if (deniedUsername) deniedUsername.textContent = `@${username}`;
         if (deniedGuildId) deniedGuildId.textContent = guildId || '--';
+
+        const deniedTitle = document.getElementById('deniedTitle');
+        const deniedSubtitle = document.getElementById('deniedSubtitle');
+        if (error && error.startsWith('NETWORK_ERROR')) {
+            if (deniedTitle) deniedTitle.textContent = 'Error de Conexión';
+            if (deniedSubtitle) deniedSubtitle.textContent = 'No se pudo conectar con la API de Discord para verificar tu membresía. Haz clic en Reintentar Verificación.';
+        } else {
+            if (deniedTitle) deniedTitle.textContent = 'Acceso Denegado';
+            if (deniedSubtitle) deniedSubtitle.textContent = 'Tu cuenta no cumple con los permisos requeridos o no pertenece al servidor configurado.';
+        }
     }
 
     // Login button
@@ -88,21 +100,52 @@ export function initAuthView({ onLoginSuccess, onLogout, onRecheck }) {
     const confirmLogoutModal = document.getElementById('confirmLogoutModal');
     const confirmLogoutAvatar = document.getElementById('confirmLogoutAvatar');
     const confirmLogoutUsername = document.getElementById('confirmLogoutUsername');
+    const logoutServiceRunningWarning = document.getElementById('logoutServiceRunningWarning');
     const btnCancelLogout = document.getElementById('btnCancelLogout');
     const btnConfirmLogout = document.getElementById('btnConfirmLogout');
 
     // Logout
     async function handleLogout() {
         if (confirmLogoutModal) confirmLogoutModal.style.display = 'none';
+
+        // Automatically stop the bot service if running or starting
+        try {
+            if (window.igniteLauncher && typeof window.igniteLauncher.getStatus === 'function') {
+                const status = await window.igniteLauncher.getStatus();
+                if (status && (status.state === 'running' || status.state === 'starting')) {
+                    await window.igniteLauncher.stopService();
+                }
+            }
+        } catch (err) {
+            console.warn('Could not stop service on logout:', err);
+        }
+
         await window.igniteLauncher.logout();
         if (typeof onLogout === 'function') onLogout();
     }
 
-    function openConfirmLogoutModal() {
+    async function openConfirmLogoutModal() {
         if (!confirmLogoutModal) {
             handleLogout();
             return;
         }
+
+        // Check if service is active to show warning
+        try {
+            if (window.igniteLauncher && typeof window.igniteLauncher.getStatus === 'function') {
+                const status = await window.igniteLauncher.getStatus();
+                if (logoutServiceRunningWarning) {
+                    if (status && (status.state === 'running' || status.state === 'starting')) {
+                        logoutServiceRunningWarning.style.display = 'flex';
+                    } else {
+                        logoutServiceRunningWarning.style.display = 'none';
+                    }
+                }
+            }
+        } catch {
+            if (logoutServiceRunningWarning) logoutServiceRunningWarning.style.display = 'none';
+        }
+
         confirmLogoutModal.style.display = 'flex';
     }
 
@@ -126,7 +169,19 @@ export function initAuthView({ onLoginSuccess, onLogout, onRecheck }) {
     }
 
     if (btnSwitchAccount) btnSwitchAccount.addEventListener('click', handleLogout);
-    if (btnRecheckAccess && onRecheck) btnRecheckAccess.addEventListener('click', onRecheck);
+    if (btnRecheckAccess && onRecheck) {
+        btnRecheckAccess.addEventListener('click', async () => {
+            btnRecheckAccess.disabled = true;
+            const recheckIconSlot = document.getElementById('recheckIconSlot');
+            if (recheckIconSlot) recheckIconSlot.innerHTML = `<span class="spin">${Icons.Loader2(14)}</span>`;
+            try {
+                await onRecheck();
+            } finally {
+                btnRecheckAccess.disabled = false;
+                if (recheckIconSlot) recheckIconSlot.innerHTML = Icons.RotateCw(14);
+            }
+        });
+    }
 
     return {
         showView,

@@ -27,6 +27,11 @@ extraResources:
     to: "service/bundled"
     filter:
       - "**/*"
+  - from: "resources/service/bundled/node_modules"
+    to: "service/bundled/node_modules"
+    filter:
+      - "**/*"
+      - "**/.*"
 
 win:
   target:

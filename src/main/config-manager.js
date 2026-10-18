@@ -86,6 +86,7 @@ class ConfigManager {
                 cookiesFromBrowser: parsed.cookiesFromBrowser || '',
                 supabaseUrl: parsed.supabaseUrl || DEFAULT_CONFIG.supabaseUrl,
                 supabaseKey: this.decryptField(parsed.supabaseKey) || DEFAULT_CONFIG.supabaseKey,
+                minimizeToTray: parsed.minimizeToTray !== undefined ? Boolean(parsed.minimizeToTray) : false,
             };
         } catch {
             return { ...DEFAULT_CONFIG };
@@ -116,6 +117,7 @@ class ConfigManager {
             cookiesFromBrowser: (newConfig.cookiesFromBrowser || '').trim(),
             supabaseUrl: (newConfig.supabaseUrl || '').trim(),
             supabaseKey: this.encryptField((newConfig.supabaseKey || '').trim()),
+            minimizeToTray: newConfig.minimizeToTray !== undefined ? Boolean(newConfig.minimizeToTray) : false,
             updatedAt: new Date().toISOString(),
         };
 
@@ -182,6 +184,107 @@ class ConfigManager {
         fs.writeFileSync(tmpPath, envContent, 'utf8');
         fs.renameSync(tmpPath, envPath);
         return true;
+    }
+
+    /**
+     * Stores or imports a cookies.txt file into the managed data directory.
+     *
+     * @param {string} sourcePathOrContent Absolute file path or raw string content
+     * @param {boolean} [isContent=false] True if sourcePathOrContent is raw string
+     * @returns {{ success: boolean, filePath?: string, error?: string }}
+     */
+    saveCookiesFile(sourcePathOrContent, isContent = false) {
+        try {
+            this.ensureDir();
+            const destPath = path.join(this.dataDir, 'cookies.txt');
+
+            if (isContent) {
+                fs.writeFileSync(destPath, sourcePathOrContent, 'utf8');
+            } else {
+                if (!sourcePathOrContent || !fs.existsSync(sourcePathOrContent)) {
+                    return { success: false, error: 'El archivo de cookies de origen no existe.' };
+                }
+                fs.copyFileSync(sourcePathOrContent, destPath);
+            }
+
+            // Also mirror to active service current directory if it exists
+            const serviceCookies = path.join(this.dataDir, 'service', 'current', 'cookies.txt');
+            if (fs.existsSync(path.dirname(serviceCookies))) {
+                try {
+                    fs.copyFileSync(destPath, serviceCookies);
+                } catch { /* ignore */ }
+            }
+
+            let toStore = {};
+            if (fs.existsSync(this.configFile)) {
+                try {
+                    toStore = JSON.parse(fs.readFileSync(this.configFile, 'utf8'));
+                } catch { /* ignore */ }
+            }
+            toStore.cookiesFile = destPath;
+            toStore.updatedAt = new Date().toISOString();
+            const tmpFile = `${this.configFile}.tmp`;
+            fs.writeFileSync(tmpFile, JSON.stringify(toStore, null, 2), 'utf8');
+            fs.renameSync(tmpFile, this.configFile);
+
+            return { success: true, filePath: destPath };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    }
+
+    /**
+     * Removes the managed cookies.txt file and clears config reference.
+     *
+     * @returns {{ success: boolean }}
+     */
+    removeCookiesFile() {
+        try {
+            const destPath = path.join(this.dataDir, 'cookies.txt');
+            if (fs.existsSync(destPath)) {
+                fs.unlinkSync(destPath);
+            }
+
+            const serviceCookies = path.join(this.dataDir, 'service', 'current', 'cookies.txt');
+            if (fs.existsSync(serviceCookies)) {
+                try { fs.unlinkSync(serviceCookies); } catch { /* ignore */ }
+            }
+
+            let toStore = {};
+            if (fs.existsSync(this.configFile)) {
+                try {
+                    toStore = JSON.parse(fs.readFileSync(this.configFile, 'utf8'));
+                } catch { /* ignore */ }
+            }
+            toStore.cookiesFile = '';
+            toStore.updatedAt = new Date().toISOString();
+            const tmpFile = `${this.configFile}.tmp`;
+            fs.writeFileSync(tmpFile, JSON.stringify(toStore, null, 2), 'utf8');
+            fs.renameSync(tmpFile, this.configFile);
+
+            return { success: true };
+        } catch {
+            return { success: false };
+        }
+    }
+
+    /**
+     * Returns whether a valid cookies.txt is currently configured and present.
+     *
+     * @returns {{ configured: boolean, path?: string, size?: number }}
+     */
+    getCookiesStatus() {
+        const destPath = path.join(this.dataDir, 'cookies.txt');
+        if (fs.existsSync(destPath)) {
+            const stats = fs.statSync(destPath);
+            return { configured: true, path: destPath, size: stats.size };
+        }
+        const cfg = this.loadConfig();
+        if (cfg.cookiesFile && fs.existsSync(cfg.cookiesFile)) {
+            const stats = fs.statSync(cfg.cookiesFile);
+            return { configured: true, path: cfg.cookiesFile, size: stats.size };
+        }
+        return { configured: false };
     }
 }
 

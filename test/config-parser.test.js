@@ -41,7 +41,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-token-123
         assert.equal(result.config.guildId, '1011718919473610863');
         assert.equal(result.config.apiSecret, 'ea02b1d82a1970cd732e7ddd2b3a8452dece30d170d137fac13ce21f1cb65186');
         assert.equal(result.config.port, 3005);
-        assert.equal(result.config.cookiesFile, './cookies.txt');
+        assert.equal(result.config.cookiesFile, undefined);
         assert.equal(result.config.cookiesFromBrowser, 'chrome');
         assert.equal(result.config.supabaseUrl, 'https://test.supabase.co');
         assert.equal(result.config.supabaseKey, 'anon-token-123');
@@ -55,6 +55,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-token-123
             guildId: '987654321',
             apiSecret: '12345678901234567890123456789012',
             port: 3002,
+            cookiesFile: 'C:\\Stale\\Path\\cookies.txt',
         });
 
         const result = parseConfigFile(jsonContent, 'config.json');
@@ -65,6 +66,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-token-123
         assert.equal(result.config.guildId, '987654321');
         assert.equal(result.config.apiSecret, '12345678901234567890123456789012');
         assert.equal(result.config.port, 3002);
+        assert.equal(result.config.cookiesFile, undefined);
     });
 
     test('parseConfigFile autogenerates API Secret if missing or too short', () => {
@@ -86,5 +88,45 @@ GUILD_ID=987654321098765432
 
         const badJson = parseConfigFile('{ bad json', 'config.json');
         assert.equal(badJson.success, false);
+    });
+
+    test('parseConfigFile rejects Netscape cookies file with descriptive error', () => {
+        const cookieContent = `# Netscape HTTP Cookie File
+# https://curl.haxx.se/rfc/cookie_spec.html
+.youtube.com\tTRUE\t/\tTRUE\t1789456789\tSID\tsample-cookie-value
+.youtube.com\tTRUE\t/\tTRUE\t1789456789\tHSID\tsample-hsid-value
+`;
+        const res1 = parseConfigFile(cookieContent, 'cookies.txt');
+        assert.equal(res1.success, false);
+        assert.equal(res1.isCookiesFile, true);
+        assert.ok(res1.error.includes('cookies'));
+
+        // Reject even if renamed to .env but content is Netscape cookies
+        const res2 = parseConfigFile(cookieContent, 'my-file.env');
+        assert.equal(res2.success, false);
+        assert.equal(res2.isCookiesFile, true);
+    });
+
+    test('parseConfigFile rejects unsupported extensions and files with no recognized parameters', () => {
+        // Unsupported extension
+        const resExt = parseConfigFile('TOKEN=123', 'avatar.png');
+        assert.equal(resExt.success, false);
+        assert.ok(resExt.error.includes('no es compatible'));
+
+        // Zero recognized parameters
+        const resZero = parseConfigFile('RANDOM_VAR=hello\nOTHER_VAR=world', '.env');
+        assert.equal(resZero.success, false);
+        assert.ok(resZero.error.includes('no contiene ninguna variable'));
+    });
+
+    test('parseConfigFile flags incomplete configuration when required bot fields are missing', () => {
+        const incompleteEnv = `
+PORT=3001
+API_SECRET=12345678901234567890123456789012
+`;
+        const res = parseConfigFile(incompleteEnv, '.env');
+        assert.equal(res.success, true);
+        assert.equal(res.isValidComplete, false);
+        assert.ok(res.missingFields.length >= 3);
     });
 });

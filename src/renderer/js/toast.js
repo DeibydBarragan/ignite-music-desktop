@@ -5,12 +5,15 @@ import { Icons } from './icons.js';
 let toastTimeout = null;
 
 /**
- * Displays an in-app frosted glass toast notification, replacing native OS alerts.
+ * Displays an in-app frosted glass toast notification modeled directly on ignite-frontend.
+ * Appears in the bottom-right corner.
+ *
  * @param {string} title
  * @param {string} message
- * @param {'error'|'success'|'warning'} [type='error']
+ * @param {'error'|'success'|'info'|'warning'} [type='error']
+ * @param {number} [duration=5000]
  */
-export function showToast(title, message, type = 'error') {
+export function showToast(title, message, type = 'error', duration = 5000) {
     const toast = document.getElementById('appToast');
     const toastTitle = document.getElementById('appToastTitle');
     const toastMessage = document.getElementById('appToastMessage');
@@ -30,22 +33,31 @@ export function showToast(title, message, type = 'error') {
 
     if (toastIconSlot) {
         if (type === 'success') {
-            toastIconSlot.innerHTML = Icons.ShieldCheck(20);
+            toastIconSlot.innerHTML = Icons.CheckCircle2(18);
+        } else if (type === 'error') {
+            toastIconSlot.innerHTML = Icons.AlertCircle(18);
+        } else if (type === 'info') {
+            toastIconSlot.innerHTML = Icons.Sparkles(18);
         } else {
-            toastIconSlot.innerHTML = Icons.ShieldAlert(20);
+            toastIconSlot.innerHTML = Icons.AlertCircle(18);
         }
     }
 
-    toast.style.display = 'flex';
-
     if (btnDismissToast) {
+        btnDismissToast.innerHTML = Icons.X(14);
         btnDismissToast.onclick = () => {
             toast.style.display = 'none';
         };
     }
 
+    toast.style.display = 'flex';
+    toast.style.animation = 'none';
+    void toast.offsetWidth;
+    toast.style.animation = '';
+
     toastTimeout = setTimeout(() => {
         toast.style.display = 'none';
         toastTimeout = null;
-    }, 6000);
+    }, duration);
 }
+

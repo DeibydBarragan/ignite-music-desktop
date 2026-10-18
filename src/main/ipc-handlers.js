@@ -3,6 +3,7 @@
 const { ipcMain, app, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const { ConfigManager, generateApiSecret } = require('./config-manager');
 const { parseConfigFile } = require('./config-parser');
 const { AuthManager } = require('./auth-manager');
@@ -49,18 +50,40 @@ function getEnvOverrides(config) {
  * 3. Relative workspace development paths
  * Never hardcodes machine-specific absolute paths.
  */
+function ensureFingerprintMarker(dir) {
+    try {
+        const marker = path.join(dir, 'node_modules', '.musicbot-installed');
+        if (fs.existsSync(path.join(dir, 'node_modules')) && (!fs.existsSync(marker) || fs.readFileSync(marker, 'utf8').trim() === '')) {
+            const hash = crypto.createHash('sha256');
+            for (const file of ['package.json', 'package-lock.json']) {
+                const full = path.join(dir, file);
+                if (fs.existsSync(full)) hash.update(fs.readFileSync(full));
+            }
+            fs.writeFileSync(marker, hash.digest('hex'), 'utf8');
+        }
+    } catch { /* ignore */ }
+}
+
 function resolveServiceDir(configManager) {
     const dataDir = configManager?.dataDir || (app && typeof app.getPath === 'function' ? app.getPath('userData') : path.join(process.cwd(), '.data'));
     const currentDir = path.join(dataDir, 'service', 'current');
+    const bundledDir = path.join(process.resourcesPath || '', 'service', 'bundled');
     if (fs.existsSync(path.join(currentDir, 'index.js'))) {
+        // Auto-heal: if current directory is missing node_modules but bundled snapshot has it, copy it
+        if (!fs.existsSync(path.join(currentDir, 'node_modules')) && fs.existsSync(path.join(bundledDir, 'node_modules'))) {
+            try {
+                fs.cpSync(path.join(bundledDir, 'node_modules'), path.join(currentDir, 'node_modules'), { recursive: true });
+            } catch { /* ignore */ }
+        }
+        ensureFingerprintMarker(currentDir);
         return currentDir;
     }
 
-    const bundledDir = path.join(process.resourcesPath || '', 'service', 'bundled');
     if (fs.existsSync(path.join(bundledDir, 'index.js'))) {
         try {
             fs.mkdirSync(currentDir, { recursive: true });
             fs.cpSync(bundledDir, currentDir, { recursive: true });
+            ensureFingerprintMarker(currentDir);
             return currentDir;
         } catch {
             return bundledDir;
@@ -195,7 +218,7 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
 
         configManager.writeEnvFile(serviceDir, config);
 
-        const res = supervisor.start(serviceDir, getEnvOverrides(config));
+        const res = supervisor.start(serviceDir, getEnvOverrides(config), { waitForReady: true });
         if (res.success) {
             tunnel.start(config.port).catch(() => {});
         }
@@ -214,7 +237,7 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
         configManager.writeEnvFile(serviceDir, config);
         announcer.clear();
         await tunnel.stop();
-        const res = await supervisor.restart(serviceDir, getEnvOverrides(config));
+        const res = await supervisor.restart(serviceDir, getEnvOverrides(config), { waitForReady: true });
         if (res.success) {
             tunnel.start(config.port).catch(() => {});
         }
@@ -251,13 +274,33 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
             properties: ['openFile'],
         });
         if (canceled || !filePaths || filePaths.length === 0) return { canceled: true };
-        return { canceled: false, filePath: filePaths[0] };
+        return { canceled: false, filePath: filePaths[0], filename: path.basename(filePaths[0]) };
     });
+
+    ipcMain.handle('config:save-cookies-file', async (_e, { filePath, content }) => {
+        if (content !== undefined) {
+            return configManager.saveCookiesFile(content, true);
+        }
+        return configManager.saveCookiesFile(filePath, false);
+    });
+
+    ipcMain.handle('config:remove-cookies-file', () => {
+        return configManager.removeCookiesFile();
+    });
+
+    ipcMain.handle('config:get-cookies-status', () => {
+        return configManager.getCookiesStatus();
+    });
+
+    ipcMain.handle('config:parse-content', (_e, { content, filename }) => {
+        return parseConfigFile(content, filename);
+    });
+
     ipcMain.handle('config:import-file', async () => {
         const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
             title: 'Importar configuración (.env o .json)',
             filters: [
-                { name: 'Archivos de configuración (.env, .json, .txt)', extensions: ['env', 'json', 'txt', 'local'] },
+                { name: 'Archivos de configuración (.env, .json)', extensions: ['env', 'json', 'local'] },
                 { name: 'Todos los archivos', extensions: ['*'] },
             ],
             properties: ['openFile'],

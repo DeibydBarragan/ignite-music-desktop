@@ -1,9 +1,20 @@
 'use strict';
 
+const dns = require('node:dns');
+
+// On Windows, getaddrinfo defaults to querying IPv6 first (AAAA), which throws EAI_FAIL (-3004)
+// on networks without IPv6 routes. Enforcing 'ipv4first' guarantees immediate, reliable DNS lookups.
+if (typeof dns.setDefaultResultOrder === 'function') {
+    dns.setDefaultResultOrder('ipv4first');
+}
+
 const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
 const { createTray } = require('./tray-manager');
 const { registerIpcHandlers, stopAllServices } = require('./ipc-handlers');
+const { ConfigManager } = require('./config-manager');
+
+const configManager = new ConfigManager();
 
 // Prevent multiple instances of the launcher
 const gotTheLock = app.requestSingleInstanceLock();
@@ -18,10 +29,10 @@ let isShuttingDown = false;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 960,
-        height: 680,
-        minWidth: 840,
-        minHeight: 600,
+        width: 980,
+        height: 750,
+        minWidth: 880,
+        minHeight: 640,
         backgroundColor: '#0f172a',
         autoHideMenuBar: true,
         show: false, // Show once ready-to-show to prevent white flash
@@ -46,6 +57,20 @@ function createWindow() {
     // Load UI
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
+    // In development mode, enable live reload (F5 / Ctrl+R) and DevTools (F12 / Ctrl+Shift+I)
+    if (!app.isPackaged) {
+        mainWindow.webContents.on('before-input-event', (event, input) => {
+            if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+                mainWindow.webContents.toggleDevTools();
+                event.preventDefault();
+            }
+            if (input.key === 'F5' || (input.control && input.key.toLowerCase() === 'r')) {
+                mainWindow.webContents.reload();
+                event.preventDefault();
+            }
+        });
+    }
+
     // Gracefully reveal window
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
@@ -60,9 +85,17 @@ function createWindow() {
         }
     }, 600);
 
-    // Intercept close button: minimize to tray instead of quitting
+    // Intercept close button: check if minimize to tray is enabled
     mainWindow.on('close', (event) => {
-        if (!app.isQuitting) {
+        let shouldMinimize = false;
+        try {
+            const config = configManager.loadConfig();
+            shouldMinimize = config.minimizeToTray === true;
+        } catch {
+            shouldMinimize = false;
+        }
+
+        if (!app.isQuitting && shouldMinimize) {
             event.preventDefault();
             mainWindow.hide();
         }
@@ -114,8 +147,7 @@ app.on('before-quit', async (event) => {
 });
 
 app.on('window-all-closed', () => {
-    // Keep alive in tray on Windows/Linux as well
-    if (process.platform === 'darwin') {
-        // macOS standard behavior
+    if (process.platform !== 'darwin') {
+        app.quit();
     }
 });
