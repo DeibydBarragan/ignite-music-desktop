@@ -56,51 +56,56 @@ function getTrayIcon(resourcesDir) {
 function createTray(mainWindow, resourcesDir) {
     if (tray) return tray;
 
-    const icon = getTrayIcon(resourcesDir);
-    tray = new Tray(icon);
-    tray.setToolTip('Ignite Music Launcher');
+    try {
+        const icon = getTrayIcon(resourcesDir);
+        tray = new Tray(icon);
+        tray.setToolTip('Ignite Music Launcher');
 
-    const updateMenu = (statusLabel = 'Detenido') => {
-        const contextMenu = Menu.buildFromTemplate([
-            {
-                label: 'Abrir Ignite Launcher',
-                click: () => {
-                    if (mainWindow.isMinimized()) mainWindow.restore();
-                    mainWindow.show();
-                    mainWindow.focus();
+        const updateMenu = (statusLabel = 'Detenido') => {
+            const contextMenu = Menu.buildFromTemplate([
+                {
+                    label: 'Abrir Ignite Launcher',
+                    click: () => {
+                        if (mainWindow.isMinimized()) mainWindow.restore();
+                        mainWindow.show();
+                        mainWindow.focus();
+                    },
                 },
-            },
-            { type: 'separator' },
-            {
-                label: `Estado: ${statusLabel}`,
-                enabled: false,
-            },
-            { type: 'separator' },
-            {
-                label: 'Salir',
-                click: () => {
-                    app.isQuitting = true;
-                    app.quit();
+                { type: 'separator' },
+                {
+                    label: `Estado: ${statusLabel}`,
+                    enabled: false,
                 },
-            },
-        ]);
-        tray.setContextMenu(contextMenu);
-    };
+                { type: 'separator' },
+                {
+                    label: 'Salir',
+                    click: () => {
+                        app.isQuitting = true;
+                        app.quit();
+                    },
+                },
+            ]);
+            tray.setContextMenu(contextMenu);
+        };
 
-    updateMenu('Detenido');
+        updateMenu('Detenido');
 
-    // Click / Double Click behavior on tray icon
-    tray.on('click', () => {
-        if (mainWindow.isVisible()) {
-            mainWindow.hide();
-        } else {
-            if (mainWindow.isMinimized()) mainWindow.restore();
-            mainWindow.show();
-            mainWindow.focus();
-        }
-    });
+        // Click / Double Click behavior on tray icon
+        tray.on('click', () => {
+            if (mainWindow.isVisible()) {
+                mainWindow.hide();
+            } else {
+                if (mainWindow.isMinimized()) mainWindow.restore();
+                mainWindow.show();
+                mainWindow.focus();
+            }
+        });
 
-    return tray;
+        return tray;
+    } catch (err) {
+        console.warn('System tray could not be initialized:', err.message);
+        return null;
+    }
 }
 
 module.exports = { createTray };

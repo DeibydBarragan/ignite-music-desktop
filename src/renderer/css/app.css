@@ -674,9 +674,6 @@ body {
     box-shadow: 0 6px 18px rgba(29, 185, 84, 0.4);
 }
 
-/* Modal Overlay & Card */
-.modal-overlay {
-    position: fixed;
 /* Modals (GlassModal standard) */
 .modal-overlay {
     position: fixed;

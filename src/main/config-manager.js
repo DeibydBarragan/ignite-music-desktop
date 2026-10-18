@@ -84,8 +84,8 @@ class ConfigManager {
                 isConfigured: Boolean(parsed.isConfigured),
                 cookiesFile: parsed.cookiesFile || '',
                 cookiesFromBrowser: parsed.cookiesFromBrowser || '',
-                supabaseUrl: parsed.supabaseUrl || '',
-                supabaseKey: this.decryptField(parsed.supabaseKey) || '',
+                supabaseUrl: parsed.supabaseUrl || DEFAULT_CONFIG.supabaseUrl,
+                supabaseKey: this.decryptField(parsed.supabaseKey) || DEFAULT_CONFIG.supabaseKey,
             };
         } catch {
             return { ...DEFAULT_CONFIG };

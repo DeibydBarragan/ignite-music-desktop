@@ -49,7 +49,16 @@ function createWindow() {
     // Gracefully reveal window
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
+        mainWindow.focus();
     });
+
+    // Fallback safety to guarantee window visibility
+    setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+            mainWindow.show();
+            mainWindow.focus();
+        }
+    }, 600);
 
     // Intercept close button: minimize to tray instead of quitting
     mainWindow.on('close', (event) => {

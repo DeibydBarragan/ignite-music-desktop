@@ -118,10 +118,22 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
         if (s.state === 'stopped' || s.state === 'error') announcer.clear();
         safeSend('tunnel:status-changed', s);
     });
-    tunnel.on('url-ready', (u) => {
+    tunnel.on('url-ready', async (u) => {
+        supervisor.emitLog({
+            type: 'stdout',
+            text: `[Tunnel] Cloudflare tunnel activo: ${u}`,
+            timestamp: new Date().toISOString(),
+        });
         const cfg = configManager.loadConfig();
         announcer.setConfig(cfg);
-        announcer.announce(u);
+        const announced = await announcer.announce(u);
+        if (announced) {
+            supervisor.emitLog({
+                type: 'stdout',
+                text: `[Supabase] URL pública sincronizada con el dashboard web (${u})`,
+                timestamp: new Date().toISOString(),
+            });
+        }
         announcer.startHeartbeat(() => tunnel.url);
         safeSend('tunnel:url-ready', u);
     });
