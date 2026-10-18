@@ -3,7 +3,7 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
 const { createTray } = require('./tray-manager');
-const { registerIpcHandlers } = require('./ipc-handlers');
+const { registerIpcHandlers, stopAllServices } = require('./ipc-handlers');
 
 // Prevent multiple instances of the launcher
 const gotTheLock = app.requestSingleInstanceLock();
@@ -14,6 +14,7 @@ if (!gotTheLock) {
 
 let mainWindow = null;
 app.isQuitting = false;
+let isShuttingDown = false;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -85,9 +86,22 @@ app.whenReady().then(() => {
     });
 });
 
-// Platform lifecycle
-app.on('before-quit', () => {
+// Platform lifecycle & clean process tree teardown
+app.on('before-quit', async (event) => {
+    if (isShuttingDown) return;
     app.isQuitting = true;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.removeAllListeners('close');
+    }
+    event.preventDefault();
+    isShuttingDown = true;
+    try {
+        await stopAllServices();
+    } catch {
+        // ignore
+    } finally {
+        app.quit();
+    }
 });
 
 app.on('window-all-closed', () => {

@@ -46,6 +46,24 @@ describe('Fase 5: Cloudflare Tunnel Supervisor Tests', () => {
         assert.ok(binary.length > 0);
     });
 
+    test('resolveBinary prioritizes process.resourcesPath in packaged environment', () => {
+        const supervisor = new TunnelSupervisor();
+        const origResourcesPath = process.resourcesPath;
+        const fakeBinDir = path.join(tmpDir, 'bin');
+        fs.mkdirSync(fakeBinDir, { recursive: true });
+        const binName = process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared';
+        const fakeBinary = path.join(fakeBinDir, binName);
+        fs.writeFileSync(fakeBinary, 'MOCK_BINARY_CONTENT');
+
+        try {
+            process.resourcesPath = tmpDir;
+            const resolved = supervisor.resolveBinary();
+            assert.equal(resolved, fakeBinary);
+        } finally {
+            process.resourcesPath = origResourcesPath;
+        }
+    });
+
     test('supervisor captures tunnel URL from process stream and transitions to connected', async () => {
         const supervisor = new TunnelSupervisor();
 
@@ -60,9 +78,6 @@ describe('Fase 5: Cloudflare Tunnel Supervisor Tests', () => {
 
         // Override resolveBinary to run node with mock-cloudflared
         supervisor.resolveBinary = () => process.execPath;
-
-        // Custom start invoking node mockScript
-        const originalStart = supervisor.start.bind(supervisor);
 
         let capturedUrl = null;
         supervisor.on('url-ready', (url) => { capturedUrl = url; });

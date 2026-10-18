@@ -60,7 +60,11 @@ function parseConfigFile(content, filename = '') {
     if (!apiSecret || apiSecret.trim().length < 32) {
         apiSecret = generateApiSecret();
     }
+    const cookiesFile = raw.cookiesFile || raw.COOKIES_FILE || '';
+    const cookiesFromBrowser = raw.cookiesFromBrowser || raw.COOKIES_FROM_BROWSER || '';
     const port = Number(raw.port || raw.PORT || raw.API_PORT) || 3001;
+    const supabaseUrl = raw.supabaseUrl || raw.SUPABASE_URL || raw.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = raw.supabaseKey || raw.SUPABASE_KEY || raw.NEXT_PUBLIC_SUPABASE_ANON_KEY || raw.SUPABASE_ANON_KEY || raw.SUPABASE_SERVICE_ROLE_KEY || '';
 
     return {
         success: true,
@@ -71,6 +75,10 @@ function parseConfigFile(content, filename = '') {
             guildId: String(guildId).trim(),
             apiSecret: String(apiSecret).trim(),
             port,
+            cookiesFile: String(cookiesFile).trim(),
+            cookiesFromBrowser: String(cookiesFromBrowser).trim(),
+            supabaseUrl: String(supabaseUrl).trim(),
+            supabaseKey: String(supabaseKey).trim(),
         },
     };
 }

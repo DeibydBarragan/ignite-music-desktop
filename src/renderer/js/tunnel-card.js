@@ -1,11 +1,14 @@
 'use strict';
 
+import { Icons } from './icons.js';
+
 export function initTunnelCard() {
     const tunnelDot = document.getElementById('tunnelDot');
     const tunnelStatusLabel = document.getElementById('tunnelStatusLabel');
     const tunnelUrlInput = document.getElementById('tunnelUrlDisplay');
     const btnCopyTunnelUrl = document.getElementById('btnCopyTunnelUrl');
     const btnOpenTunnelUrl = document.getElementById('btnOpenTunnelUrl');
+    const tunnelCard = document.querySelector('.tunnel-card-box');
 
     let currentUrl = null;
 
@@ -22,27 +25,31 @@ export function initTunnelCard() {
 
         if (state === 'connected' && currentUrl) {
             if (tunnelDot) tunnelDot.className = 'status-indicator status-online';
+            if (tunnelCard) tunnelCard.classList.add('tunnel-active');
             if (tunnelStatusLabel) {
                 tunnelStatusLabel.textContent = 'Túnel Activo';
-                tunnelStatusLabel.style.color = '#10b981';
+                tunnelStatusLabel.style.color = 'var(--status-online)';
             }
         } else if (state === 'connecting') {
             if (tunnelDot) tunnelDot.className = 'status-indicator status-starting';
+            if (tunnelCard) tunnelCard.classList.remove('tunnel-active');
             if (tunnelStatusLabel) {
                 tunnelStatusLabel.textContent = 'Conectando con Cloudflare...';
-                tunnelStatusLabel.style.color = '#f59e0b';
+                tunnelStatusLabel.style.color = 'var(--status-warning)';
             }
         } else if (state === 'error') {
             if (tunnelDot) tunnelDot.className = 'status-indicator status-crashed';
+            if (tunnelCard) tunnelCard.classList.remove('tunnel-active');
             if (tunnelStatusLabel) {
                 tunnelStatusLabel.textContent = 'Error en Túnel';
                 tunnelStatusLabel.style.color = '#ef4444';
             }
         } else {
             if (tunnelDot) tunnelDot.className = 'status-indicator status-offline';
+            if (tunnelCard) tunnelCard.classList.remove('tunnel-active');
             if (tunnelStatusLabel) {
                 tunnelStatusLabel.textContent = 'Inactivo';
-                tunnelStatusLabel.style.color = 'var(--text-muted)';
+                tunnelStatusLabel.style.color = 'var(--muted)';
             }
         }
     }
@@ -52,9 +59,14 @@ export function initTunnelCard() {
             if (!currentUrl) return;
             try {
                 await navigator.clipboard.writeText(currentUrl);
-                const prev = btnCopyTunnelUrl.textContent;
-                btnCopyTunnelUrl.textContent = '¡Copiado!';
-                setTimeout(() => { btnCopyTunnelUrl.textContent = prev; }, 1800);
+                const copyIconSlot = document.getElementById('copyTunnelIconSlot');
+                const copyText = document.getElementById('copyTunnelText');
+                if (copyIconSlot) copyIconSlot.innerHTML = Icons.Check(13);
+                if (copyText) copyText.textContent = '¡Copiado!';
+                setTimeout(() => {
+                    if (copyIconSlot) copyIconSlot.innerHTML = Icons.Copy(13);
+                    if (copyText) copyText.textContent = 'Copiar URL';
+                }, 1800);
             } catch (err) {
                 console.warn('Copy to clipboard failed:', err);
             }

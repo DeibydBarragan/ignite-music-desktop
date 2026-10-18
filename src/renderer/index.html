@@ -10,36 +10,60 @@
 <body>
     <header class="app-header">
         <div class="brand">
-            <img src="assets/icon.png" alt="Ignite Music" width="32" height="32" style="border-radius: 8px; box-shadow: 0 0 14px rgba(129, 140, 248, 0.4);">
-            <div class="brand-name">Ignite Music</div>
-            <div class="brand-version" id="appVersion">v1.0.0</div>
+            <img src="assets/icon.png" alt="Ignite Music" class="brand-logo-img">
+            <div class="brand-text">
+                <span class="brand-name">Ignite Music</span>
+                <span class="brand-version" id="appVersion">v1.0.0</span>
+            </div>
         </div>
 
         <div class="header-meta">
-            <div class="user-badge" id="userBadge" style="display: none;">
-                <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
-                <div class="user-info">
-                    <span id="userName" class="user-name">Usuario</span>
-                    <span id="userRole" class="badge-role">Miembro</span>
+            <!-- User Profile Badge (cloning ignite-frontend UserBadge) -->
+            <div class="user-badge-wrapper" id="userBadge" style="display: none;">
+                <div class="user-badge-panel">
+                    <div class="user-avatar-container">
+                        <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+                        <span class="user-online-dot"></span>
+                    </div>
+                    <div class="user-text-info">
+                        <span id="userName" class="user-name">Usuario</span>
+                        <span id="userRole" class="badge-role badge-admin">Miembro</span>
+                    </div>
                 </div>
-                <button class="btn-icon btn-logout" id="btnLogout" title="Cerrar sesión">✕</button>
+                <button type="button" class="btn-logout-danger" id="btnLogout" title="Cerrar sesión" aria-label="Cerrar sesión">
+                    <span id="logoutIconSlot"></span>
+                    <span class="btn-logout-text">Salir</span>
+                </button>
             </div>
-            <div class="badge" id="configBadge">
-                <span class="badge-dot" id="configDot"></span>
+
+            <!-- Service & Config Badges (cloning ignite-frontend TabServiceBadge) -->
+            <div class="tab-service-badge tab-service-badge-warning" id="configBadge">
+                <span class="badge-dot-container">
+                    <span class="badge-dot-ping"></span>
+                    <span class="badge-dot active" id="configDot"></span>
+                </span>
                 <span id="configStatusLabel">Verificando...</span>
             </div>
-            <div class="badge">
-                <span class="badge-dot active" id="serviceDot"></span>
+
+            <div class="tab-service-badge tab-service-badge-online" id="serviceBadge">
+                <span class="badge-dot-container">
+                    <span class="badge-dot-ping"></span>
+                    <span class="badge-dot active" id="serviceDot"></span>
+                </span>
                 <span id="serviceStatusLabel">Launcher Listo</span>
             </div>
-            <button class="btn btn-secondary" id="btnOpenSettings" title="Configuración">⚙️ Configuración</button>
+
+            <button class="btn btn-secondary" id="btnOpenSettings" title="Configuración">
+                <span id="settingsIconSlot"></span>
+                <span>Configuración</span>
+            </button>
         </div>
     </header>
 
     <!-- OTA Update Notification Banner -->
-    <div id="updateBanner" class="update-banner" style="display: none;">
+    <div id="updateBanner" class="update-banner glass-panel" style="display: none;">
         <div class="update-banner-content">
-            <span class="update-banner-icon">🚀</span>
+            <div class="update-banner-icon-box" id="updateRocketIconSlot"></div>
             <div class="update-banner-text">
                 <strong id="updateBannerTitle">Actualización disponible</strong>
                 <span id="updateBannerSubtitle">Nueva versión lista para descargar.</span>
@@ -47,182 +71,389 @@
         </div>
         <div class="update-banner-actions">
             <button class="btn btn-sm btn-primary" id="btnApplyUpdate">Ver Release</button>
-            <button class="btn-icon" id="btnDismissUpdate" title="Descartar">✕</button>
+            <button class="btn-icon modal-close" id="btnDismissUpdate" title="Descartar">✕</button>
         </div>
     </div>
 
     <main class="main-container">
         <!-- Login Required View -->
-        <section class="card card-center" id="loginView" style="display: none;">
+        <section class="card-center" id="loginView" style="display: none;">
             <div class="card-icon-hero">
                 <svg viewBox="0 0 24 24" class="discord-svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
             </div>
             <h2 class="card-title-hero">Autenticación Requerida</h2>
-            <p class="card-subtitle-hero">Identifícate con tu cuenta de Discord para verificar tu acceso al servidor configurado.</p>
+            <p class="card-subtitle-hero">Identifícate con tu cuenta de Discord para verificar tu membresía y roles en el servidor configurado.</p>
             <div id="loginAlert" class="alert-box" style="display: none; max-width: 480px; margin: 0 auto 16px;"></div>
-            <button class="btn btn-discord" id="btnLoginDiscord"><span>Iniciar Sesión con Discord</span></button>
-            <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 14px;">Redirect URI para Discord Portal: <code style="color: #818cf8; user-select: all;">http://127.0.0.1:53134/callback</code></p>
+            <button class="btn btn-discord" id="btnLoginDiscord">
+                <span id="discordLoginIconSlot"></span>
+                <span>Iniciar Sesión con Discord</span>
+            </button>
+            <div class="redirect-uri-pill">
+                <span>Redirect URI para Discord Portal:</span>
+                <code>http://127.0.0.1:53134/callback</code>
+            </div>
         </section>
 
         <!-- Access Denied View -->
-        <section class="card card-center" id="deniedView" style="display: none;">
-            <div class="card-icon-hero icon-denied">🚫</div>
-            <h2 class="card-title-hero" style="color: #ef4444;">Acceso Denegado</h2>
-            <p class="card-subtitle-hero">Tu cuenta <strong id="deniedUsername">@usuario</strong> no es miembro del servidor.<br><small style="color: var(--text-muted);">Servidor objetivo ID: <span id="deniedGuildId">--</span></small></p>
+        <section class="card-center" id="deniedView" style="display: none;">
+            <div class="card-icon-hero icon-denied" id="deniedIconSlot"></div>
+            <h2 class="card-title-hero" style="color: #f87171;">Acceso Denegado</h2>
+            <p class="card-subtitle-hero">Tu cuenta no cumple con los permisos requeridos o no pertenece al servidor configurado.</p>
+            <div class="denied-info-box">
+                <div>Cuenta autenticada: <strong id="deniedUsername">@usuario</strong></div>
+                <div>ID Servidor objetivo: <strong id="deniedGuildId" class="font-mono">--</strong></div>
+            </div>
             <div class="hero-actions">
-                <button class="btn btn-secondary" id="btnRecheckAccess">Reintentar Verificación</button>
-                <button class="btn btn-outline" id="btnSwitchAccount">Iniciar con otra cuenta</button>
+                <button class="btn btn-secondary" id="btnRecheckAccess">
+                    <span id="recheckIconSlot"></span>
+                    <span>Reintentar Verificación</span>
+                </button>
+                <button class="btn btn-outline" id="btnSwitchAccount">
+                    <span id="switchAccountIconSlot"></span>
+                    <span>Iniciar con otra cuenta</span>
+                </button>
             </div>
         </section>
 
-        <!-- Main Dashboard View -->
-        <div id="dashboardView" style="display: none; flex-direction: column; gap: 20px;">
-            <section class="card service-control-card">
-                <div class="service-header">
-                    <div class="service-status-box">
-                        <span class="status-indicator status-offline" id="botStatusDot"></span>
-                        <div>
-                            <h2 class="service-title">Ignite Music Service</h2>
-                            <div class="service-meta">Estado: <strong id="botStatusLabel">Detenido</strong> • Tiempo activo: <span id="botUptime" class="font-mono">00:00:00</span></div>
+        <!-- Main Dashboard View (Dual-Zone Cockpit Architecture) -->
+        <div id="dashboardView" style="display: none; flex-direction: column; gap: 16px;">
+            <!-- Zona 1: Command & Gateway Deck (Grid 50% / 50%) -->
+            <div class="dashboard-deck-top">
+                <!-- Bot Service Controls -->
+                <section class="card glass-panel service-control-card">
+                    <div class="service-header">
+                        <div class="service-status-box">
+                            <span class="status-indicator status-offline" id="botStatusDot"></span>
+                            <div>
+                                <div class="service-title-row">
+                                    <h2 class="service-title">Ignite Music Service</h2>
+                                    <span class="service-status-pill">
+                                        <span>Estado:</span>
+                                        <strong id="botStatusLabel">Detenido</strong>
+                                    </span>
+                                </div>
+                                <div class="service-meta">
+                                    <span>Tiempo activo:</span>
+                                    <span class="uptime-badge font-mono" id="botUptime">00:00:00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" id="btnStartService">
+                                <span id="startServiceIconSlot"></span>
+                                <span>Iniciar Bot</span>
+                            </button>
+                            <button class="btn btn-secondary" id="btnRestartService" disabled>
+                                <span id="restartServiceIconSlot"></span>
+                                <span>Reiniciar</span>
+                            </button>
+                            <button class="btn btn-danger" id="btnStopService" disabled>
+                                <span id="stopServiceIconSlot"></span>
+                                <span>Detener</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="service-actions">
-                        <button class="btn btn-primary" id="btnStartService">▶ Iniciar Bot</button>
-                        <button class="btn btn-secondary" id="btnRestartService" disabled>🔄 Reiniciar</button>
-                        <button class="btn btn-danger" id="btnStopService" disabled>⏹ Detener</button>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Tunnel Card -->
-            <section class="card tunnel-card-box">
-                <div class="tunnel-header-row">
-                    <div class="tunnel-status-box">
-                        <span class="status-indicator status-offline" id="tunnelDot"></span>
-                        <div>
-                            <div class="tunnel-badge-title"><span>☁️</span><strong>Cloudflare Quick Tunnel</strong></div>
-                            <div class="tunnel-meta">Estado: <span id="tunnelStatusLabel" style="color: var(--text-muted);">Inactivo</span></div>
+                <!-- Cloudflare Tunnel Gateway -->
+                <section class="card glass-panel tunnel-card-box">
+                    <div class="tunnel-header-row">
+                        <div class="tunnel-status-box">
+                            <div class="tunnel-icon-hero" id="tunnelCloudIconSlot"></div>
+                            <div>
+                                <div class="tunnel-badge-title">
+                                    <strong>Cloudflare Quick Tunnel</strong>
+                                    <span class="status-indicator status-offline" id="tunnelDot"></span>
+                                </div>
+                                <div class="tunnel-meta">Estado: <span id="tunnelStatusLabel" style="color: var(--muted);">Inactivo</span></div>
+                            </div>
+                        </div>
+                        <div class="tunnel-link-box">
+                            <input type="text" id="tunnelUrlDisplay" class="glass-input tunnel-url-input" readonly value="Esperando inicio del servicio...">
+                            <button class="btn btn-secondary btn-sm" id="btnCopyTunnelUrl" disabled>
+                                <span id="copyTunnelIconSlot"></span>
+                                <span id="copyTunnelText">Copiar URL</span>
+                            </button>
+                            <button class="btn btn-outline btn-sm" id="btnOpenTunnelUrl" disabled>
+                                <span id="openTunnelIconSlot"></span>
+                                <span>Abrir</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="tunnel-link-box">
-                        <input type="text" id="tunnelUrlDisplay" class="tunnel-url-input" readonly value="Esperando inicio del servicio...">
-                        <button class="btn btn-secondary btn-sm" id="btnCopyTunnelUrl" disabled>📋 Copiar URL</button>
-                        <button class="btn btn-outline btn-sm" id="btnOpenTunnelUrl" disabled>🌐 Abrir</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Terminal Log Viewer -->
-            <section class="card terminal-card">
-                <div class="terminal-header">
-                    <div class="terminal-title"><span>📟</span><span>Consola de Logs en Tiempo Real</span></div>
-                    <div class="terminal-actions">
-                        <div class="log-filter-group">
-                            <button class="log-filter-btn active" data-filter="all">Todos</button>
-                            <button class="log-filter-btn" data-filter="stdout">Info</button>
-                            <button class="log-filter-btn" data-filter="stderr">Errores</button>
-                        </div>
-                        <button class="btn btn-outline btn-sm" id="btnCopyLogs">📋 Copiar</button>
-                        <button class="btn btn-outline btn-sm" id="btnClearLogs">🗑 Limpiar</button>
-                    </div>
-                </div>
-                <div class="terminal-body" style="position: relative;">
-                    <div id="logContainer" class="log-container"></div>
-                    <div id="logScrollNotice" class="log-scroll-notice" style="display: none;">⬇ Auto-scroll pausado. Clic para reanudar.</div>
-                </div>
-            </section>
-
-            <!-- Info & Architecture -->
-            <div class="info-grid">
-                <div class="info-item"><div class="info-label">Plataforma</div><div class="info-value" id="platformValue">--</div></div>
-                <div class="info-item"><div class="info-label">Arquitectura</div><div class="info-value" id="archValue">--</div></div>
-                <div class="info-item"><div class="info-label">Versión Electron</div><div class="info-value" id="electronValue">--</div></div>
-                <div class="info-item"><div class="info-label">Node Runtime</div><div class="info-value" id="nodeValue">--</div></div>
-                <div class="info-item"><div class="info-label">Context Isolation</div><div class="info-value" style="color: var(--status-online);">Habilitado</div></div>
-                <div class="info-item"><div class="info-label">Sandbox Mode</div><div class="info-value" style="color: var(--status-online);">Activo</div></div>
+                </section>
             </div>
 
-            <div class="action-box">
-                <div class="action-status">Prueba de comunicación IPC: <strong id="pingResult">Pendiente</strong></div>
-                <button class="btn" id="btnPing">Probar Ping IPC</button>
-            </div>
+            <!-- Zona 2: Operational Workspace (Grid Asimétrico 68% / 32%) -->
+            <div class="dashboard-workspace">
+                <!-- Terminal Log Viewer (Main Workspace) -->
+                <section class="card glass-panel terminal-card">
+                    <div class="terminal-header">
+                        <div class="terminal-title">
+                            <span id="terminalIconSlot"></span>
+                            <span>Consola de Logs en Tiempo Real</span>
+                        </div>
+                        <div class="terminal-actions">
+                            <div class="log-filter-group">
+                                <button class="log-filter-btn active" data-filter="all">Todos</button>
+                                <button class="log-filter-btn" data-filter="stdout">Info</button>
+                                <button class="log-filter-btn" data-filter="stderr">Errores</button>
+                            </div>
+                            <button class="btn btn-outline btn-sm" id="btnCopyLogs">
+                                <span id="copyLogsIconSlot"></span>
+                                <span id="copyLogsText">Copiar</span>
+                            </button>
+                            <button class="btn btn-outline btn-sm" id="btnClearLogs">
+                                <span id="clearLogsIconSlot"></span>
+                                <span>Limpiar</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="terminal-body" style="position: relative;">
+                        <div id="logContainer" class="log-container custom-scrollbar"></div>
+                        <div id="logScrollNotice" class="log-scroll-notice" style="display: none;">⬇ Auto-scroll pausado. Clic para reanudar.</div>
+                    </div>
+                </section>
 
-            <section class="notice-box">
-                <div class="notice-icon">💡</div>
-                <div><strong>System Tray:</strong> Al presionar <strong>X</strong>, la app se minimiza a la bandeja del sistema junto al reloj. Haz clic en el icono para restaurarla.</div>
-            </section>
+                <!-- System Vitals & Diagnostics Sidebar -->
+                <aside class="card glass-panel sidebar-vitals-panel">
+                    <div class="sidebar-vitals-header">
+                        <div class="sidebar-vitals-title">
+                            <span class="vitals-icon-slot">⚡</span>
+                            <span>Diagnóstico & Entorno</span>
+                        </div>
+                        <span class="badge-pill-status pill-status-online">En Vivo</span>
+                    </div>
+
+                    <div class="vitals-metrics-list">
+                        <div class="vital-row">
+                            <span class="vital-name">Plataforma</span>
+                            <span class="vital-val font-mono" id="platformValue">--</span>
+                        </div>
+                        <div class="vital-row">
+                            <span class="vital-name">Arquitectura</span>
+                            <span class="vital-val font-mono" id="archValue">--</span>
+                        </div>
+                        <div class="vital-row">
+                            <span class="vital-name">Electron</span>
+                            <span class="vital-val font-mono" id="electronValue">--</span>
+                        </div>
+                        <div class="vital-row">
+                            <span class="vital-name">Node Runtime</span>
+                            <span class="vital-val font-mono" id="nodeValue">--</span>
+                        </div>
+                        <div class="vital-row">
+                            <span class="vital-name">Context Isolation</span>
+                            <span class="badge-pill-status pill-status-online">Habilitado</span>
+                        </div>
+                        <div class="vital-row">
+                            <span class="vital-name">Sandbox Mode</span>
+                            <span class="badge-pill-status pill-status-online">Activo</span>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-vitals-divider"></div>
+
+                    <!-- IPC Ping Action Box -->
+                    <div class="vital-ipc-section">
+                        <div class="vital-ipc-status">
+                            <span>Latencia IPC:</span>
+                            <strong id="pingResult" class="font-mono">Pendiente</strong>
+                        </div>
+                        <button class="btn btn-secondary btn-sm btn-block" id="btnPing">
+                            <span id="pingIconSlot"></span>
+                            <span>Probar Ping IPC</span>
+                        </button>
+                    </div>
+
+                    <div class="sidebar-vitals-divider"></div>
+
+                    <!-- System Tray Tip -->
+                    <div class="vital-tray-tip">
+                        <span class="notice-icon" id="noticeIconSlot"></span>
+                        <div class="vital-tray-text">
+                            <strong>System Tray:</strong> Al presionar <strong>X</strong>, la app se minimiza a la bandeja del sistema.
+                        </div>
+                    </div>
+                </aside>
+            </div>
         </div>
 
-        <!-- Settings & Maintenance Modal -->
-        <div class="modal-overlay" id="settingsModal" style="display: none;">
-            <div class="modal-card">
+        <!-- Settings & Maintenance Modal (GlassModal standard) -->
+        <div class="modal-overlay glass-backdrop" id="settingsModal" style="display: none;">
+            <div class="modal-card glass-modal-panel">
                 <div class="modal-header">
-                    <div>
-                        <h3 class="modal-title">Configuración del Sistema</h3>
-                        <p class="modal-subtitle">Credenciales protegidas y herramientas de mantenimiento.</p>
+                    <div class="modal-header-left">
+                        <div class="modal-icon-badge" id="settingsModalHeaderIconSlot"></div>
+                        <div>
+                            <h3 class="modal-title">Configuración del Sistema</h3>
+                            <p class="modal-subtitle">Credenciales protegidas y herramientas de mantenimiento.</p>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <button type="button" class="btn btn-secondary btn-sm" id="btnImportConfig">📂 Importar .env / .json</button>
-                        <button class="modal-close" id="btnCloseSettings">&times;</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnImportConfig">
+                            <span id="importConfigIconSlot"></span>
+                            <span>Importar .env / .json</span>
+                        </button>
+                        <button class="modal-close" id="btnCloseSettings" title="Cerrar">
+                            <span id="closeSettingsIconSlot"></span>
+                        </button>
                     </div>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body custom-scrollbar">
                     <div id="settingsAlert" class="alert-box" style="display: none;"></div>
                     <form id="settingsForm">
                         <div class="form-group">
                             <label for="inputToken" class="form-label">Discord Bot Token <span class="required">*</span></label>
                             <div class="input-with-action">
-                                <input type="password" id="inputToken" class="form-control" placeholder="MTAy..." autocomplete="off">
-                                <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputToken">👁️</button>
+                                <input type="password" id="inputToken" class="form-control glass-input" placeholder="MTAy..." autocomplete="off">
+                                <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputToken"></button>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="inputClientId" class="form-label">Client ID <span class="required">*</span></label>
-                                <input type="text" id="inputClientId" class="form-control" placeholder="1234567890" autocomplete="off">
+                                <input type="text" id="inputClientId" class="form-control glass-input" placeholder="1234567890" autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label for="inputGuildId" class="form-label">Guild ID <span class="required">*</span></label>
-                                <input type="text" id="inputGuildId" class="form-control" placeholder="9876543210" autocomplete="off">
+                                <input type="text" id="inputGuildId" class="form-control glass-input" placeholder="9876543210" autocomplete="off">
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="inputClientSecret" class="form-label">Client Secret <span class="required">*</span></label>
                             <div class="input-with-action">
-                                <input type="password" id="inputClientSecret" class="form-control" placeholder="••••••••" autocomplete="off">
-                                <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputClientSecret">👁️</button>
+                                <input type="password" id="inputClientSecret" class="form-control glass-input" placeholder="••••••••" autocomplete="off">
+                                <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputClientSecret"></button>
                             </div>
-                            <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">Agrega en Discord Portal &gt; OAuth2 &gt; Redirects: <code style="color: #818cf8; user-select: all;">http://127.0.0.1:53134/callback</code></small>
+                            <small style="color: var(--muted); font-size: 0.75rem; display: block; margin-top: 5px;">Agrega en Discord Portal &gt; OAuth2 &gt; Redirects: <code style="color: #c084fc; user-select: all; font-family: var(--font-mono);">http://127.0.0.1:53134/callback</code></small>
                         </div>
                         <div class="form-group">
                             <label for="inputApiSecret" class="form-label">API Secret (Mínimo 32 caracteres) <span class="required">*</span></label>
                             <div class="input-with-action">
-                                <input type="text" id="inputApiSecret" class="form-control" placeholder="64-hex secret..." autocomplete="off">
-                                <button type="button" class="btn btn-secondary" id="btnGenSecret">Generar</button>
+                                <input type="text" id="inputApiSecret" class="form-control glass-input" placeholder="64-hex secret..." autocomplete="off">
+                                <button type="button" class="btn btn-secondary" id="btnGenSecret">
+                                    <span id="genSecretIconSlot"></span>
+                                    <span>Generar</span>
+                                </button>
                             </div>
                         </div>
                         <div class="form-group" style="max-width: 180px;">
                             <label for="inputPort" class="form-label">Puerto API REST</label>
-                            <input type="number" id="inputPort" class="form-control" value="3001" min="1024" max="65535">
+                            <input type="number" id="inputPort" class="form-control glass-input" value="3001" min="1024" max="65535">
+                        </div>
+
+                        <!-- YouTube & Anti-Bot Protection -->
+                        <div class="form-section-divider" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
+                            <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; color: var(--foreground); display: flex; align-items: center; gap: 6px;">
+                                <span>🍪 YouTube & Bypass Anti-Bot</span>
+                            </h4>
+                            <p style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px;">
+                                Resuelve el bloqueo de YouTube (<em>"Sign in to confirm you're not a bot"</em>) vinculando cookies.
+                            </p>
+                            <div class="form-group">
+                                <label for="inputCookiesFile" class="form-label">Archivo de Cookies (cookies.txt)</label>
+                                <div class="input-with-action">
+                                    <input type="text" id="inputCookiesFile" class="form-control glass-input" placeholder="Ningún archivo seleccionado" readonly>
+                                    <button type="button" class="btn btn-secondary" id="btnSelectCookiesFile">Examinar</button>
+                                    <button type="button" class="btn btn-outline" id="btnClearCookiesFile" title="Quitar archivo">✕</button>
+                                </div>
+                                <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 4px;">
+                                    Exporta cookies desde YouTube con la extensión <strong>"Get cookies.txt LOCALLY"</strong> en Chrome/Edge.
+                                </small>
+                            </div>
+                            <div class="form-group" style="margin-top: 10px;">
+                                <label for="selectCookiesFromBrowser" class="form-label">O leer desde navegador local</label>
+                                <select id="selectCookiesFromBrowser" class="form-control glass-input">
+                                    <option value="">Desactivado (usar archivo cookies.txt)</option>
+                                    <option value="chrome">Google Chrome</option>
+                                    <option value="edge">Microsoft Edge</option>
+                                    <option value="firefox">Mozilla Firefox</option>
+                                    <option value="brave">Brave Browser</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dashboard Web & Supabase -->
+                        <div class="form-section-divider" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
+                            <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; color: var(--foreground); display: flex; align-items: center; gap: 6px;">
+                                <span>🌐 Sincronización Dashboard Web (Supabase)</span>
+                            </h4>
+                            <p style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px;">
+                                Permite que el Dashboard Web detecte el bot como <strong>"Online"</strong> y controle la música de forma remota.
+                            </p>
+                            <div class="form-group">
+                                <label for="inputSupabaseUrl" class="form-label">Supabase Project URL</label>
+                                <input type="text" id="inputSupabaseUrl" class="form-control glass-input" placeholder="https://xxxxxxxx.supabase.co" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="inputSupabaseKey" class="form-label">Supabase Anon / Service Key</label>
+                                <div class="input-with-action">
+                                    <input type="password" id="inputSupabaseKey" class="form-control glass-input" placeholder="eyJhbGciOi..." autocomplete="off">
+                                    <button type="button" class="btn btn-outline btn-toggle-pw" data-target="inputSupabaseKey"></button>
+                                </div>
+                            </div>
                         </div>
                     </form>
 
-                    <!-- Maintenance Section (Phase 6) -->
-                    <div class="maintenance-box" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-                        <h4 style="font-size: 0.95rem; margin-bottom: 6px; color: var(--text-primary);">Mantenimiento y Extractores</h4>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Actualiza los extractores yt-dlp para resolver problemas de reproducción sin actualizar toda la app.</p>
+                    <!-- Maintenance Section -->
+                    <div class="maintenance-box" style="margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border);">
+                        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; color: var(--foreground);">Mantenimiento y Extractores</h4>
+                        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 12px;">Actualiza los extractores yt-dlp para resolver problemas de reproducción sin actualizar toda la app.</p>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnUpdateExtractors">⚡ Actualizar yt-dlp</button>
-                            <button type="button" class="btn btn-outline btn-sm" id="btnCheckUpdates">🔍 Buscar Actualizaciones</button>
-                            <span id="maintenanceStatusLabel" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnUpdateExtractors">
+                                <span id="updateExtractorsIconSlot"></span>
+                                <span>Actualizar yt-dlp</span>
+                            </button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnCheckUpdates">
+                                <span id="checkUpdatesIconSlot"></span>
+                                <span>Buscar Actualizaciones</span>
+                            </button>
+                            <span id="maintenanceStatusLabel" style="font-size: 0.8rem; color: var(--muted);"></span>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-outline" id="btnCancelSettings">Cancelar</button>
-                    <button class="btn btn-primary" id="btnSaveSettings">Guardar Credenciales</button>
+                    <button class="btn btn-primary" id="btnSaveSettings">
+                        <span id="saveSettingsIconSlot"></span>
+                        <span>Guardar Credenciales</span>
+                    </button>
                 </div>
             </div>
+        </div>
+
+        <!-- Logout Confirmation Modal (ConfirmDialog) -->
+        <div class="modal-overlay glass-backdrop" id="confirmLogoutModal" style="display: none;">
+            <div class="modal-card glass-modal-panel confirm-dialog-card">
+                <div class="confirm-dialog-header">
+                    <div class="confirm-icon-danger" id="logoutConfirmIconSlot"></div>
+                    <div>
+                        <h3 class="modal-title">¿Cerrar Sesión?</h3>
+                        <p class="modal-subtitle">Tu configuración y credenciales seguirán guardadas de forma segura en este equipo.</p>
+                    </div>
+                </div>
+                <div class="confirm-dialog-user" id="confirmLogoutUserPreview">
+                    <img src="assets/icon.png" alt="" id="confirmLogoutAvatar" class="confirm-user-avatar">
+                    <div>
+                        <div class="confirm-user-name" id="confirmLogoutUsername">@usuario</div>
+                        <div class="confirm-user-desc">Sesión activa actual</div>
+                    </div>
+                </div>
+                <div class="modal-footer confirm-dialog-footer">
+                    <button type="button" class="btn btn-outline" id="btnCancelLogout">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmLogout">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- In-App Glass Toast Notifications -->
+        <div id="appToast" class="app-toast glass-panel" style="display: none;">
+            <div class="app-toast-icon" id="appToastIconSlot"></div>
+            <div class="app-toast-content">
+                <div class="app-toast-title" id="appToastTitle">Notificación</div>
+                <div class="app-toast-message" id="appToastMessage"></div>
+            </div>
+            <button class="app-toast-close" id="btnDismissToast" title="Cerrar">&times;</button>
         </div>
     </main>
 

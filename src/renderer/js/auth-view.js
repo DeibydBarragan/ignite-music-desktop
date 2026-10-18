@@ -33,6 +33,8 @@ export function initAuthView({ onLoginSuccess, onLogout, onRecheck }) {
         userBadge.style.display = 'flex';
         if (userAvatar) userAvatar.src = user.avatarUrl;
         if (userName) userName.textContent = membership?.nick || user.globalName || user.username;
+        if (confirmLogoutAvatar) confirmLogoutAvatar.src = user.avatarUrl || 'assets/icon.png';
+        if (confirmLogoutUsername) confirmLogoutUsername.textContent = '@' + (membership?.nick || user.globalName || user.username || 'usuario');
 
         if (userRole) {
             if (membership?.isAdmin) {
@@ -82,13 +84,47 @@ export function initAuthView({ onLoginSuccess, onLogout, onRecheck }) {
         });
     }
 
+    // Logout ConfirmDialog elements
+    const confirmLogoutModal = document.getElementById('confirmLogoutModal');
+    const confirmLogoutAvatar = document.getElementById('confirmLogoutAvatar');
+    const confirmLogoutUsername = document.getElementById('confirmLogoutUsername');
+    const btnCancelLogout = document.getElementById('btnCancelLogout');
+    const btnConfirmLogout = document.getElementById('btnConfirmLogout');
+
     // Logout
     async function handleLogout() {
+        if (confirmLogoutModal) confirmLogoutModal.style.display = 'none';
         await window.igniteLauncher.logout();
         if (typeof onLogout === 'function') onLogout();
     }
 
-    if (btnLogout) btnLogout.addEventListener('click', handleLogout);
+    function openConfirmLogoutModal() {
+        if (!confirmLogoutModal) {
+            handleLogout();
+            return;
+        }
+        confirmLogoutModal.style.display = 'flex';
+    }
+
+    function closeConfirmLogoutModal() {
+        if (confirmLogoutModal) confirmLogoutModal.style.display = 'none';
+    }
+
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            openConfirmLogoutModal();
+        });
+    }
+
+    if (btnCancelLogout) btnCancelLogout.addEventListener('click', closeConfirmLogoutModal);
+    if (btnConfirmLogout) btnConfirmLogout.addEventListener('click', handleLogout);
+
+    if (confirmLogoutModal) {
+        confirmLogoutModal.addEventListener('click', (e) => {
+            if (e.target === confirmLogoutModal) closeConfirmLogoutModal();
+        });
+    }
+
     if (btnSwitchAccount) btnSwitchAccount.addEventListener('click', handleLogout);
     if (btnRecheckAccess && onRecheck) btnRecheckAccess.addEventListener('click', onRecheck);
 

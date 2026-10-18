@@ -6,6 +6,8 @@ dist/
 out/
 *.blockmap
 resources/bin/node.exe
+resources/bin/cloudflared.exe
+resources/service/bundled/
 
 # Runtime local data & encrypted credentials
 .data/

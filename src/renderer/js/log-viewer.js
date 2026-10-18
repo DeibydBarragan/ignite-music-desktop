@@ -1,5 +1,7 @@
 'use strict';
 
+import { Icons } from './icons.js';
+
 /**
  * Escapes HTML characters to prevent XSS in log streams.
  */
@@ -45,6 +47,9 @@ export function initLogViewer() {
         if (!logContainer) return;
         if (currentFilter !== 'all' && entry.type !== currentFilter) return;
 
+        const emptyEl = logContainer.querySelector('.log-empty-state');
+        if (emptyEl) emptyEl.remove();
+
         const lineEl = document.createElement('div');
         lineEl.className = `log-line log-${entry.type}`;
 
@@ -72,8 +77,18 @@ export function initLogViewer() {
     function reRenderAll() {
         if (!logContainer) return;
         logContainer.innerHTML = '';
+        let renderedCount = 0;
         for (const entry of entries) {
-            renderLine(entry);
+            if (currentFilter === 'all' || entry.type === currentFilter) {
+                renderLine(entry);
+                renderedCount++;
+            }
+        }
+        if (renderedCount === 0) {
+            const msg = entries.length === 0
+                ? 'Esperando logs del servicio... Pulsa "Iniciar Bot" para comenzar la transmisión.'
+                : 'No se encontraron eventos para el filtro seleccionado.';
+            logContainer.innerHTML = `<div class="log-empty-state"><span>${msg}</span></div>`;
         }
         if (autoScroll) {
             logContainer.scrollTop = logContainer.scrollHeight;
@@ -101,7 +116,10 @@ export function initLogViewer() {
     if (btnClearLogs) {
         btnClearLogs.addEventListener('click', () => {
             entries.length = 0;
-            if (logContainer) logContainer.innerHTML = '';
+            reRenderAll();
+            if (window.igniteLauncher && typeof window.igniteLauncher.clearLogs === 'function') {
+                window.igniteLauncher.clearLogs().catch(() => {});
+            }
         });
     }
 
@@ -110,9 +128,14 @@ export function initLogViewer() {
             const rawText = entries.map((e) => `[${e.timestamp}] ${e.text}`).join('\n');
             try {
                 await navigator.clipboard.writeText(rawText);
-                const prev = btnCopyLogs.textContent;
-                btnCopyLogs.textContent = '¡Copiado!';
-                setTimeout(() => { btnCopyLogs.textContent = prev; }, 1500);
+                const copyIconSlot = document.getElementById('copyLogsIconSlot');
+                const copyText = document.getElementById('copyLogsText');
+                if (copyIconSlot) copyIconSlot.innerHTML = Icons.Check(13);
+                if (copyText) copyText.textContent = '¡Copiado!';
+                setTimeout(() => {
+                    if (copyIconSlot) copyIconSlot.innerHTML = Icons.Copy(13);
+                    if (copyText) copyText.textContent = 'Copiar';
+                }, 1500);
             } catch (err) {
                 console.warn('Copy to clipboard failed:', err);
             }
@@ -136,11 +159,21 @@ export function initLogViewer() {
         });
     }
 
+    if (window.igniteLauncher && typeof window.igniteLauncher.onLogsCleared === 'function') {
+        window.igniteLauncher.onLogsCleared(() => {
+            entries.length = 0;
+            reRenderAll();
+        });
+    }
+
+    // Initialize initial state (empty placeholder)
+    reRenderAll();
+
     return {
         addLogEntry,
         clear: () => {
             entries.length = 0;
-            if (logContainer) logContainer.innerHTML = '';
+            reRenderAll();
         },
     };
 }

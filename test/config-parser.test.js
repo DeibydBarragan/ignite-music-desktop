@@ -28,6 +28,10 @@ DISCORD_CLIENT_SECRET=oauth-secret-key-456
 NEXT_PUBLIC_DEFAULT_GUILD_ID=1011718919473610863
 IGNITE_API_SECRET=ea02b1d82a1970cd732e7ddd2b3a8452dece30d170d137fac13ce21f1cb65186
 API_PORT=3005
+COOKIES_FILE=./cookies.txt
+COOKIES_FROM_BROWSER=chrome
+NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-token-123
 `;
         const result = parseConfigFile(envContent, '.env');
         assert.equal(result.success, true);
@@ -37,6 +41,10 @@ API_PORT=3005
         assert.equal(result.config.guildId, '1011718919473610863');
         assert.equal(result.config.apiSecret, 'ea02b1d82a1970cd732e7ddd2b3a8452dece30d170d137fac13ce21f1cb65186');
         assert.equal(result.config.port, 3005);
+        assert.equal(result.config.cookiesFile, './cookies.txt');
+        assert.equal(result.config.cookiesFromBrowser, 'chrome');
+        assert.equal(result.config.supabaseUrl, 'https://test.supabase.co');
+        assert.equal(result.config.supabaseKey, 'anon-token-123');
     });
 
     test('parseConfigFile parses .json format accurately', () => {

@@ -46,28 +46,36 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
         assert.equal(typeof exposedApi.startService, 'function');
         assert.equal(typeof exposedApi.stopService, 'function');
         assert.equal(typeof exposedApi.restartService, 'function');
+        assert.equal(typeof exposedApi.clearLogs, 'function');
         assert.equal(typeof exposedApi.getTunnelStatus, 'function');
+        assert.equal(typeof exposedApi.getTunnelUrl, 'function');
         assert.equal(typeof exposedApi.startTunnel, 'function');
         assert.equal(typeof exposedApi.stopTunnel, 'function');
         assert.equal(typeof exposedApi.getConfig, 'function');
         assert.equal(typeof exposedApi.saveConfig, 'function');
         assert.equal(typeof exposedApi.generateApiSecret, 'function');
         assert.equal(typeof exposedApi.importConfigFile, 'function');
+        assert.equal(typeof exposedApi.selectCookiesFile, 'function');
         assert.equal(typeof exposedApi.loginWithDiscord, 'function');
         assert.equal(typeof exposedApi.logout, 'function');
         assert.equal(typeof exposedApi.getCurrentUser, 'function');
         assert.equal(typeof exposedApi.checkMembership, 'function');
+        assert.equal(typeof exposedApi.getMembershipStatus, 'function');
         assert.equal(typeof exposedApi.minimizeWindow, 'function');
         assert.equal(typeof exposedApi.maximizeWindow, 'function');
         assert.equal(typeof exposedApi.closeWindow, 'function');
         assert.equal(typeof exposedApi.onStatusChange, 'function');
         assert.equal(typeof exposedApi.onLogEntry, 'function');
+        assert.equal(typeof exposedApi.onLogsCleared, 'function');
         assert.equal(typeof exposedApi.onTunnelStatus, 'function');
         assert.equal(typeof exposedApi.onTunnelUrl, 'function');
+        assert.equal(typeof exposedApi.onTunnelUrlChange, 'function');
         assert.equal(typeof exposedApi.checkForUpdates, 'function');
+        assert.equal(typeof exposedApi.applyUpdate, 'function');
         assert.equal(typeof exposedApi.rollbackUpdate, 'function');
         assert.equal(typeof exposedApi.updateAudioExtractors, 'function');
         assert.equal(typeof exposedApi.onUpdaterStatus, 'function');
+        assert.equal(typeof exposedApi.onUpdateProgress, 'function');
 
         // Verify that dangerous Node APIs are NOT on the exposed object
         assert.equal(exposedApi.require, undefined);
@@ -132,10 +140,13 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
         assert.ok(registeredHandlers.has('app:ping'));
         assert.ok(registeredHandlers.has('app:get-info'));
         assert.ok(registeredHandlers.has('service:get-status'));
+        assert.ok(registeredHandlers.has('service:clear-logs'));
         assert.ok(registeredHandlers.has('updater:check'));
+        assert.ok(registeredHandlers.has('updater:apply'));
         assert.ok(registeredHandlers.has('updater:rollback'));
         assert.ok(registeredHandlers.has('updater:update-extractors'));
         assert.ok(registeredHandlers.has('config:import-file'));
+        assert.ok(registeredHandlers.has('config:select-cookies-file'));
 
         // Verify ping response
         const pingFn = registeredHandlers.get('app:ping');

@@ -1,6 +1,6 @@
 'use strict';
 
-const { spawn } = require('node:child_process');
+const { spawn, execSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 const { EventEmitter } = require('node:events');
@@ -30,13 +30,23 @@ class TunnelSupervisor extends EventEmitter {
         this.emit('status-changed', this.getStatus());
     }
 
+    /**
+     * Resolves the cloudflared executable path.
+     * Prioritizes production paths (outside app.asar) via process.resourcesPath.
+     */
     resolveBinary() {
+        const binName = process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared';
         const candidates = [
-            path.join(__dirname, '../../resources/bin', process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared'),
-            path.resolve(__dirname, '../../../ignite-music/bin', process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared'),
+            // 1. Packaged Electron extraResources: <installDir>/resources/bin/
+            process.resourcesPath ? path.join(process.resourcesPath, 'bin', binName) : null,
+            process.resourcesPath ? path.join(process.resourcesPath, binName) : null,
+            // 2. Development paths (local workspace)
+            path.join(__dirname, '../../resources/bin', binName),
+            path.resolve(__dirname, '../../../ignite-music/bin', binName),
+            // 3. System installed binary paths (Windows)
             'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe',
             'C:\\Program Files\\cloudflared\\cloudflared.exe',
-        ];
+        ].filter(Boolean);
 
         for (const candidate of candidates) {
             if (fs.existsSync(candidate)) return candidate;
@@ -127,13 +137,22 @@ class TunnelSupervisor extends EventEmitter {
         }
 
         const child = this.child;
+        const pid = child.pid;
         this.child = null;
         this.url = null;
         this.setState('stopped');
 
         return new Promise((resolve) => {
             const timer = setTimeout(() => {
-                try { child.kill('SIGKILL'); } catch { /* ignore */ }
+                try {
+                    if (process.platform === 'win32' && pid) {
+                        try {
+                            execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
+                        } catch { /* ignore */ }
+                    } else {
+                        child.kill('SIGKILL');
+                    }
+                } catch { /* ignore */ }
                 resolve({ success: true });
             }, 2000);
             timer.unref?.();

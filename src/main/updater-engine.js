@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { execSync } = require('node:child_process');
 const { EventEmitter } = require('node:events');
 const { app } = require('electron');
 
@@ -42,7 +43,7 @@ class UpdaterEngine extends EventEmitter {
         this.currentDir = path.join(this.serviceDir, 'current');
         this.backupDir = path.join(this.serviceDir, 'backup');
         this.fetch = customFetch;
-        this.state = 'idle'; // 'idle' | 'checking' | 'downloading' | 'verifying' | 'error'
+        this.state = 'idle'; // 'idle' | 'checking' | 'downloading' | 'verifying' | 'updated' | 'rolled-back' | 'error'
     }
 
     setState(newState) {
@@ -92,6 +93,34 @@ class UpdaterEngine extends EventEmitter {
     }
 
     /**
+     * Extracts zip file into target directory using native tar.exe (libarchive) or PowerShell.
+     *
+     * @param {string} zipPath
+     * @param {string} targetDir
+     * @returns {boolean}
+     */
+    extractZip(zipPath, targetDir) {
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+        try {
+            const tarCmd = process.platform === 'win32' ? 'tar.exe' : 'tar';
+            execSync(`${tarCmd} -xf "${zipPath}" -C "${targetDir}"`, { stdio: 'ignore' });
+            return true;
+        } catch {
+            if (process.platform === 'win32') {
+                try {
+                    execSync(`powershell -NoProfile -NonInteractive -Command "Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${targetDir}' -Force"`, { stdio: 'ignore' });
+                    return true;
+                } catch {
+                    return false;
+                }
+            }
+            return false;
+        }
+    }
+
+    /**
      * Creates an atomic backup of current directory before replacing files.
      */
     createBackup() {
@@ -117,10 +146,98 @@ class UpdaterEngine extends EventEmitter {
                 fs.rmSync(this.currentDir, { recursive: true, force: true });
             }
             fs.renameSync(this.backupDir, this.currentDir);
-            this.emit('status-changed', { state: 'rolled-back' });
+            this.setState('rolled-back');
             return true;
         } catch {
             return false;
+        }
+    }
+
+    /**
+     * Downloads and applies release zip package in place with progress tracking.
+     *
+     * @param {string} downloadUrl
+     * @returns {Promise<{ success: boolean, error?: string }>}
+     */
+    async applyUpdate(downloadUrl) {
+        if (!downloadUrl) return { success: false, error: 'NO_DOWNLOAD_URL' };
+
+        this.setState('downloading');
+        if (!fs.existsSync(this.serviceDir)) {
+            fs.mkdirSync(this.serviceDir, { recursive: true });
+        }
+
+        const zipPath = path.join(this.serviceDir, 'update.zip');
+        const stagingDir = path.join(this.serviceDir, 'staging');
+
+        try {
+            const res = await this.fetch(downloadUrl, {
+                headers: { 'User-Agent': 'IgniteLauncher-Updater/1.0.0' },
+            });
+
+            if (!res.ok) {
+                this.setState('error');
+                return { success: false, error: `DOWNLOAD_FAILED_HTTP_${res.status}` };
+            }
+
+            const contentLength = Number(res.headers.get?.('content-length')) || 0;
+            let transferred = 0;
+
+            if (res.body && typeof res.body.getReader === 'function') {
+                const reader = res.body.getReader();
+                const chunks = [];
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    transferred += value.length;
+                    const percent = contentLength > 0 ? Math.round((transferred / contentLength) * 100) : 0;
+                    this.emit('download-progress', { transferred, total: contentLength, percent });
+                }
+                fs.writeFileSync(zipPath, Buffer.concat(chunks));
+            } else {
+                const buffer = Buffer.from(await res.arrayBuffer());
+                fs.writeFileSync(zipPath, buffer);
+                this.emit('download-progress', { transferred: buffer.length, total: buffer.length, percent: 100 });
+            }
+
+            this.setState('verifying');
+            if (fs.existsSync(stagingDir)) {
+                fs.rmSync(stagingDir, { recursive: true, force: true });
+            }
+            fs.mkdirSync(stagingDir, { recursive: true });
+
+            const extracted = this.extractZip(zipPath, stagingDir);
+            if (!extracted) {
+                this.setState('error');
+                return { success: false, error: 'EXTRACTION_FAILED' };
+            }
+
+            // Find root directory containing code if GitHub wrapped in a folder
+            let contentDir = stagingDir;
+            const entries = fs.readdirSync(stagingDir);
+            if (entries.length === 1 && fs.statSync(path.join(stagingDir, entries[0])).isDirectory()) {
+                contentDir = path.join(stagingDir, entries[0]);
+            }
+
+            // Create backup of current files
+            this.createBackup();
+
+            // Atomic swap
+            if (fs.existsSync(this.currentDir)) {
+                fs.rmSync(this.currentDir, { recursive: true, force: true });
+            }
+            fs.renameSync(contentDir, this.currentDir);
+
+            // Cleanup
+            try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch { /* ignore */ }
+            try { fs.unlinkSync(zipPath); } catch { /* ignore */ }
+
+            this.setState('updated');
+            return { success: true };
+        } catch (err) {
+            this.setState('error');
+            return { success: false, error: err.message };
         }
     }
 

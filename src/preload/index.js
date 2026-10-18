@@ -18,16 +18,19 @@ const ALLOWED_INVOKE_CHANNELS = new Set([
     'service:start',
     'service:stop',
     'service:restart',
+    'service:clear-logs',
     'tunnel:get-status',
     'tunnel:start',
     'tunnel:stop',
     'updater:check',
+    'updater:apply',
     'updater:rollback',
     'updater:update-extractors',
     'config:get',
     'config:save',
     'config:generate-secret',
     'config:import-file',
+    'config:select-cookies-file',
     'auth:login',
     'auth:logout',
     'auth:get-current-user',
@@ -37,9 +40,11 @@ const ALLOWED_INVOKE_CHANNELS = new Set([
 const ALLOWED_LISTEN_CHANNELS = new Set([
     'service:status-changed',
     'service:log-entry',
+    'service:logs-cleared',
     'tunnel:status-changed',
     'tunnel:url-ready',
     'updater:status-changed',
+    'updater:download-progress',
 ]);
 
 /**
@@ -54,9 +59,14 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
     startService: () => ipcRenderer.invoke('service:start'),
     stopService: () => ipcRenderer.invoke('service:stop'),
     restartService: () => ipcRenderer.invoke('service:restart'),
+    clearLogs: () => ipcRenderer.invoke('service:clear-logs'),
 
     // Cloudflare Tunnel (Phase 5)
     getTunnelStatus: () => ipcRenderer.invoke('tunnel:get-status'),
+    getTunnelUrl: async () => {
+        const status = await ipcRenderer.invoke('tunnel:get-status');
+        return status?.url || null;
+    },
     startTunnel: (port) => ipcRenderer.invoke('tunnel:start', port),
     stopTunnel: () => ipcRenderer.invoke('tunnel:stop'),
 
@@ -65,12 +75,14 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
     saveConfig: (cfg) => ipcRenderer.invoke('config:save', cfg),
     generateApiSecret: () => ipcRenderer.invoke('config:generate-secret'),
     importConfigFile: () => ipcRenderer.invoke('config:import-file'),
+    selectCookiesFile: () => ipcRenderer.invoke('config:select-cookies-file'),
 
     // Authentication & Gatekeeper
     loginWithDiscord: () => ipcRenderer.invoke('auth:login'),
     logout: () => ipcRenderer.invoke('auth:logout'),
     getCurrentUser: () => ipcRenderer.invoke('auth:get-current-user'),
     checkMembership: () => ipcRenderer.invoke('auth:check-membership'),
+    getMembershipStatus: () => ipcRenderer.invoke('auth:check-membership'),
 
     // Window controls
     minimizeWindow: () => ipcRenderer.send('window:minimize'),
@@ -96,6 +108,15 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
         };
     },
 
+    onLogsCleared: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const subscription = () => callback();
+        ipcRenderer.on('service:logs-cleared', subscription);
+        return () => {
+            ipcRenderer.removeListener('service:logs-cleared', subscription);
+        };
+    },
+
     onTunnelStatus: (callback) => {
         if (typeof callback !== 'function') return () => {};
         const subscription = (_event, status) => callback(status);
@@ -114,8 +135,18 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
         };
     },
 
-    // Updater & Audio Extractors (Phase 6)
+    onTunnelUrlChange: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const subscription = (_event, url) => callback(url);
+        ipcRenderer.on('tunnel:url-ready', subscription);
+        return () => {
+            ipcRenderer.removeListener('tunnel:url-ready', subscription);
+        };
+    },
+
+    // Updater & Audio Extractors (OTA Updates)
     checkForUpdates: (force) => ipcRenderer.invoke('updater:check', force),
+    applyUpdate: (downloadUrl) => ipcRenderer.invoke('updater:apply', downloadUrl),
     rollbackUpdate: () => ipcRenderer.invoke('updater:rollback'),
     updateAudioExtractors: () => ipcRenderer.invoke('updater:update-extractors'),
     onUpdaterStatus: (callback) => {
@@ -126,5 +157,12 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
             ipcRenderer.removeListener('updater:status-changed', subscription);
         };
     },
+    onUpdateProgress: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const subscription = (_event, progress) => callback(progress);
+        ipcRenderer.on('updater:download-progress', subscription);
+        return () => {
+            ipcRenderer.removeListener('updater:download-progress', subscription);
+        };
+    },
 });
-

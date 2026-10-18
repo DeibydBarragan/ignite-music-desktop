@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const { execSync } = require('node:child_process');
 const { UpdaterEngine, isNewerVersion } = require('../src/main/updater-engine');
 
 describe('Fase 6: Updater Engine Unit Tests', () => {
@@ -100,6 +101,49 @@ describe('Fase 6: Updater Engine Unit Tests', () => {
             // Verify content restored
             const restoredContent = fs.readFileSync(path.join(updater.currentDir, 'version.txt'), 'utf8');
             assert.equal(restoredContent, 'v1.0.0-stable');
+        } finally {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+
+    test('applyUpdate downloads, extracts package, creates backup and updates current dir', async () => {
+        const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ignite-updater-apply-'));
+        const stagingSource = path.join(tempDir, 'source-v2');
+        fs.mkdirSync(stagingSource, { recursive: true });
+        fs.writeFileSync(path.join(stagingSource, 'index.js'), '// Version 2.0.0 Content');
+        fs.writeFileSync(path.join(stagingSource, 'package.json'), '{"name":"ignite-music","version":"2.0.0"}');
+
+        const zipPath = path.join(tempDir, 'release.zip');
+        const tarCmd = process.platform === 'win32' ? 'tar.exe' : 'tar';
+        execSync(`${tarCmd} -cf "${zipPath}" -C "${stagingSource}" .`, { stdio: 'ignore' });
+        const zipBuffer = fs.readFileSync(zipPath);
+
+        const mockFetch = async () => ({
+            ok: true,
+            status: 200,
+            headers: {
+                get: (h) => (h.toLowerCase() === 'content-length' ? String(zipBuffer.length) : null),
+            },
+            arrayBuffer: async () => zipBuffer,
+        });
+
+        try {
+            const updater = new UpdaterEngine(tempDir, mockFetch);
+            // Setup initial v1.0.0 in current
+            fs.mkdirSync(updater.currentDir, { recursive: true });
+            fs.writeFileSync(path.join(updater.currentDir, 'index.js'), '// Version 1.0.0 Content');
+
+            const res = await updater.applyUpdate('https://github.com/test/release.zip');
+            assert.equal(res.success, true);
+
+            // Verify current is updated
+            const updatedContent = fs.readFileSync(path.join(updater.currentDir, 'index.js'), 'utf8');
+            assert.equal(updatedContent, '// Version 2.0.0 Content');
+
+            // Verify backup exists with v1.0.0
+            assert.ok(fs.existsSync(path.join(updater.backupDir, 'index.js')));
+            const backupContent = fs.readFileSync(path.join(updater.backupDir, 'index.js'), 'utf8');
+            assert.equal(backupContent, '// Version 1.0.0 Content');
         } finally {
             fs.rmSync(tempDir, { recursive: true, force: true });
         }

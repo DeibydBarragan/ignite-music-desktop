@@ -21,23 +21,15 @@ class ConfigManager {
         }
     }
 
-    /**
-     * Encrypts sensitive string using safeStorage if available.
-     *
-     * @param {string} plainText
-     * @returns {string} Base64 representation (tagged with prefix)
-     */
+    /** Encrypts sensitive string using safeStorage if available. */
     encryptField(plainText) {
         if (!plainText) return '';
         try {
-            if (safeStorage && typeof safeStorage.isEncryptionAvailable === 'function' && safeStorage.isEncryptionAvailable()) {
+            if (safeStorage?.isEncryptionAvailable?.()) {
                 const encrypted = safeStorage.encryptString(plainText);
                 return `enc:safe:${encrypted.toString('base64')}`;
             }
-        } catch {
-            // Fall back to protected encoding below
-        }
-        // Fallback for environments without native keyring
+        } catch { /* Fall back to protected encoding below */ }
         const b64 = Buffer.from(plainText, 'utf8').toString('base64');
         return `enc:b64:${b64}`;
     }
@@ -90,6 +82,10 @@ class ConfigManager {
                 apiSecret: this.decryptField(parsed.apiSecret),
                 port: Number(parsed.port) || 3001,
                 isConfigured: Boolean(parsed.isConfigured),
+                cookiesFile: parsed.cookiesFile || '',
+                cookiesFromBrowser: parsed.cookiesFromBrowser || '',
+                supabaseUrl: parsed.supabaseUrl || '',
+                supabaseKey: this.decryptField(parsed.supabaseKey) || '',
             };
         } catch {
             return { ...DEFAULT_CONFIG };
@@ -116,6 +112,10 @@ class ConfigManager {
             apiSecret: this.encryptField(newConfig.apiSecret.trim()),
             port: Number(newConfig.port),
             isConfigured: true,
+            cookiesFile: (newConfig.cookiesFile || '').trim(),
+            cookiesFromBrowser: (newConfig.cookiesFromBrowser || '').trim(),
+            supabaseUrl: (newConfig.supabaseUrl || '').trim(),
+            supabaseKey: this.encryptField((newConfig.supabaseKey || '').trim()),
             updatedAt: new Date().toISOString(),
         };
 
@@ -133,7 +133,7 @@ class ConfigManager {
      * @returns {string}
      */
     formatEnvContent(config) {
-        return [
+        const lines = [
             '# Generated automatically by Ignite Music Desktop Launcher',
             `# Updated: ${new Date().toISOString()}`,
             '',
@@ -144,10 +144,24 @@ class ConfigManager {
             `GUILD_ID=${String(config.guildId).trim()}`,
             `API_SECRET=${config.apiSecret.trim()}`,
             `PORT=${Number(config.port) || 3001}`,
+            `API_PORT=${Number(config.port) || 3001}`,
+            'API_ENABLED=true',
+            'API_ALLOWED_ORIGINS=*',
             'NODE_ENV=production',
             'AUTO_TUNNEL=true',
-            '',
-        ].join('\n');
+        ];
+
+        if (config.cookiesFile) lines.push(`COOKIES_FILE=${config.cookiesFile.trim()}`);
+        if (config.cookiesFromBrowser) lines.push(`COOKIES_FROM_BROWSER=${config.cookiesFromBrowser.trim()}`);
+        if (config.supabaseUrl) lines.push(`SUPABASE_URL=${config.supabaseUrl.trim()}`);
+        if (config.supabaseKey) {
+            lines.push(`SUPABASE_KEY=${config.supabaseKey.trim()}`);
+            lines.push(`SUPABASE_ANON_KEY=${config.supabaseKey.trim()}`);
+            lines.push(`SUPABASE_SERVICE_ROLE_KEY=${config.supabaseKey.trim()}`);
+        }
+
+        lines.push('');
+        return lines.join('\n');
     }
 
     /**

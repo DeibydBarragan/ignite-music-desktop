@@ -6,7 +6,11 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test \"test/**/*.test.js\"",
-    "predist:win": "node scripts/ensure-node.js",
+    "prebuild": "node scripts/ensure-node.js && node scripts/bundle-service.js",
+    "predist": "npm run prebuild",
+    "predist:win": "npm run prebuild",
+    "predist:linux": "node scripts/bundle-service.js",
+    "prepack": "npm run prebuild",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:win": "electron-builder --win",

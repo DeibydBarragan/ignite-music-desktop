@@ -1,5 +1,7 @@
 'use strict';
 
+import { Icons } from './icons.js';
+
 export function initSettingsModal(onSaveSuccess) {
     const settingsModal = document.getElementById('settingsModal');
     const settingsAlert = document.getElementById('settingsAlert');
@@ -16,6 +18,12 @@ export function initSettingsModal(onSaveSuccess) {
     const inputClientSecret = document.getElementById('inputClientSecret');
     const inputApiSecret = document.getElementById('inputApiSecret');
     const inputPort = document.getElementById('inputPort');
+    const inputCookiesFile = document.getElementById('inputCookiesFile');
+    const btnSelectCookiesFile = document.getElementById('btnSelectCookiesFile');
+    const btnClearCookiesFile = document.getElementById('btnClearCookiesFile');
+    const selectCookiesFromBrowser = document.getElementById('selectCookiesFromBrowser');
+    const inputSupabaseUrl = document.getElementById('inputSupabaseUrl');
+    const inputSupabaseKey = document.getElementById('inputSupabaseKey');
 
     function openModal() {
         if (!settingsModal) return;
@@ -52,21 +60,40 @@ export function initSettingsModal(onSaveSuccess) {
         });
     }
 
-    // Toggle password fields
+    // Toggle password fields with Lucide SVG vector icons
     document.querySelectorAll('.btn-toggle-pw').forEach((btn) => {
+        btn.innerHTML = Icons.Eye(15);
         btn.addEventListener('click', () => {
             const targetId = btn.getAttribute('data-target');
             const target = document.getElementById(targetId);
             if (!target) return;
             if (target.type === 'password') {
                 target.type = 'text';
-                btn.textContent = '🔒';
+                btn.innerHTML = Icons.EyeOff(15);
             } else {
                 target.type = 'password';
-                btn.textContent = '👁️';
+                btn.innerHTML = Icons.Eye(15);
             }
         });
     });
+
+    // YouTube cookies file picker
+    if (btnSelectCookiesFile) {
+        btnSelectCookiesFile.addEventListener('click', async () => {
+            try {
+                const res = await window.igniteLauncher.selectCookiesFile();
+                if (!res || res.canceled || !res.filePath) return;
+                if (inputCookiesFile) inputCookiesFile.value = res.filePath;
+            } catch (err) {
+                showAlert('error', `Error al seleccionar archivo: ${err.message}`);
+            }
+        });
+    }
+    if (btnClearCookiesFile) {
+        btnClearCookiesFile.addEventListener('click', () => {
+            if (inputCookiesFile) inputCookiesFile.value = '';
+        });
+    }
 
     // Generate secret
     if (btnGenSecret) {
@@ -112,6 +139,10 @@ export function initSettingsModal(onSaveSuccess) {
                 clientSecret: inputClientSecret?.value || '',
                 apiSecret: inputApiSecret?.value || '',
                 port: Number(inputPort?.value) || 3001,
+                cookiesFile: inputCookiesFile?.value || '',
+                cookiesFromBrowser: selectCookiesFromBrowser?.value || '',
+                supabaseUrl: inputSupabaseUrl?.value || '',
+                supabaseKey: inputSupabaseKey?.value || '',
             };
 
             btnSaveSettings.disabled = true;
@@ -146,6 +177,10 @@ export function initSettingsModal(onSaveSuccess) {
         if (inputClientSecret) inputClientSecret.value = cfg.clientSecret || '';
         if (inputApiSecret) inputApiSecret.value = cfg.apiSecret || '';
         if (inputPort) inputPort.value = cfg.port || 3001;
+        if (inputCookiesFile) inputCookiesFile.value = cfg.cookiesFile || '';
+        if (selectCookiesFromBrowser) selectCookiesFromBrowser.value = cfg.cookiesFromBrowser || '';
+        if (inputSupabaseUrl) inputSupabaseUrl.value = cfg.supabaseUrl || '';
+        if (inputSupabaseKey) inputSupabaseKey.value = cfg.supabaseKey || '';
     }
 
     return {

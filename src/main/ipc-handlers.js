@@ -10,9 +10,13 @@ const { verifyGuildMembership } = require('./gatekeeper');
 const { ProcessSupervisor } = require('./process-supervisor');
 const { TunnelSupervisor } = require('./tunnel-supervisor');
 const { UpdaterEngine } = require('./updater-engine');
+const { SupabaseAnnouncer } = require('./supabase-announcer');
+
+let activeSupervisor = null;
+let activeTunnel = null;
 
 function getEnvOverrides(config) {
-    return {
+    const overrides = {
         TOKEN: config.discordToken,
         DISCORD_TOKEN: config.discordToken,
         CLIENT_ID: config.clientId,
@@ -20,44 +24,137 @@ function getEnvOverrides(config) {
         GUILD_ID: config.guildId,
         API_SECRET: config.apiSecret,
         PORT: String(config.port),
+        API_PORT: String(config.port),
+        API_ENABLED: 'true',
+        API_ALLOWED_ORIGINS: '*',
         AUTO_TUNNEL: 'false', // Desktop Launcher manages tunnel natively
     };
+    if (config.cookiesFile) overrides.COOKIES_FILE = config.cookiesFile;
+    if (config.cookiesFromBrowser) overrides.COOKIES_FROM_BROWSER = config.cookiesFromBrowser;
+    if (config.supabaseUrl) overrides.SUPABASE_URL = config.supabaseUrl;
+    if (config.supabaseKey) {
+        overrides.SUPABASE_KEY = config.supabaseKey;
+        overrides.SUPABASE_ANON_KEY = config.supabaseKey;
+        overrides.SUPABASE_SERVICE_ROLE_KEY = config.supabaseKey;
+    }
+    if (activeTunnel?.url) overrides.PUBLIC_API_URL = activeTunnel.url;
+    return overrides;
+}
+
+/**
+ * Resolves the ignite-music directory.
+ * Prioritizes:
+ * 1. userData/service/current (active updated service)
+ * 2. process.resourcesPath/service/bundled (packaged app first-run initialization)
+ * 3. Relative workspace development paths
+ * Never hardcodes machine-specific absolute paths.
+ */
+function resolveServiceDir(configManager) {
+    const dataDir = configManager?.dataDir || (app && typeof app.getPath === 'function' ? app.getPath('userData') : path.join(process.cwd(), '.data'));
+    const currentDir = path.join(dataDir, 'service', 'current');
+    if (fs.existsSync(path.join(currentDir, 'index.js'))) {
+        return currentDir;
+    }
+
+    const bundledDir = path.join(process.resourcesPath || '', 'service', 'bundled');
+    if (fs.existsSync(path.join(bundledDir, 'index.js'))) {
+        try {
+            fs.mkdirSync(currentDir, { recursive: true });
+            fs.cpSync(bundledDir, currentDir, { recursive: true });
+            return currentDir;
+        } catch {
+            return bundledDir;
+        }
+    }
+
+    const devCandidates = [
+        path.resolve(__dirname, '../../../ignite-music'),
+        path.resolve(__dirname, '../../../../ignite-music'),
+        path.resolve(path.dirname(process.execPath), '../../../ignite-music'),
+        path.resolve(path.dirname(process.execPath), '../../../../ignite-music'),
+        path.resolve(process.cwd(), '../ignite-music'),
+        path.resolve(process.cwd(), 'ignite-music'),
+    ];
+
+    for (const candidate of devCandidates) {
+        if (candidate && fs.existsSync(path.join(candidate, 'index.js'))) {
+            return candidate;
+        }
+    }
+    return currentDir;
+}
+
+/**
+ * Shuts down all active child services gracefully.
+ * Used during application exit or window teardown.
+ */
+async function stopAllServices() {
+    if (activeTunnel) {
+        try { await activeTunnel.stop(); } catch { /* ignore */ }
+    }
+    if (activeSupervisor) {
+        try { await activeSupervisor.stop(); } catch { /* ignore */ }
+    }
 }
 
 function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervisor, customTunnel, customUpdater) {
     const configManager = customConfig || new ConfigManager();
     const authManager = customAuth || new AuthManager();
-    const supervisor = customSupervisor || new ProcessSupervisor();
+    const supervisor = customSupervisor || new ProcessSupervisor(path.join(configManager.dataDir, 'logs'));
     const tunnel = customTunnel || new TunnelSupervisor();
     const updater = customUpdater || new UpdaterEngine(configManager.dataDir);
+    const announcer = new SupabaseAnnouncer();
+    announcer.setConfig(configManager.loadConfig());
+
+    activeSupervisor = supervisor;
+    activeTunnel = tunnel;
 
     const safeSend = (ch, data) => !mainWindow.isDestroyed() && mainWindow.webContents.send(ch, data);
 
     supervisor.on('log', (entry) => safeSend('service:log-entry', entry));
     supervisor.on('status-changed', (s) => safeSend('service:status-changed', s));
-    tunnel.on('status-changed', (s) => safeSend('tunnel:status-changed', s));
-    tunnel.on('url-ready', (u) => safeSend('tunnel:url-ready', u));
+    supervisor.on('logs-cleared', () => safeSend('service:logs-cleared'));
+    tunnel.on('status-changed', (s) => {
+        if (s.state === 'stopped' || s.state === 'error') announcer.clear();
+        safeSend('tunnel:status-changed', s);
+    });
+    tunnel.on('url-ready', (u) => {
+        const cfg = configManager.loadConfig();
+        announcer.setConfig(cfg);
+        announcer.announce(u);
+        announcer.startHeartbeat(() => tunnel.url);
+        safeSend('tunnel:url-ready', u);
+    });
     updater.on('status-changed', (s) => safeSend('updater:status-changed', s));
+    updater.on('download-progress', (p) => safeSend('updater:download-progress', p));
 
-    function resolveServiceDir() {
-        const candidates = [
-            path.join(configManager.dataDir, 'service', 'current'),
-            path.resolve(__dirname, '../../../ignite-music'),
-            path.resolve(__dirname, '../../../../ignite-music'),
-            path.resolve(path.dirname(process.execPath), '../../../ignite-music'),
-            path.resolve(path.dirname(process.execPath), '../../../../ignite-music'),
-            path.resolve(process.cwd(), '../ignite-music'),
-            path.resolve(process.cwd(), 'ignite-music'),
-            'C:\\Users\\Usuario\\Documents\\Proyectos\\ignite\\ignite-music',
-        ];
+    // Automatic crash loop detection within first 10 seconds of startup
+    supervisor.on('crash-loop-detected', async ({ exitCode }) => {
+        supervisor.emit('log', {
+            type: 'stderr',
+            text: `[Supervisor] ⚠️ ¡Crash loop detectado en los primeros 10 segundos (código ${exitCode})! Ejecutando rollback automático a la versión previa...`,
+            timestamp: new Date().toISOString(),
+        });
 
-        for (const candidate of candidates) {
-            if (candidate && fs.existsSync(path.join(candidate, 'index.js'))) {
-                return candidate;
-            }
+        const rolledBack = updater.rollback();
+        if (rolledBack) {
+            safeSend('updater:status-changed', { state: 'rolled-back', reason: 'CRASH_LOOP_DETECTED' });
+            supervisor.emit('log', {
+                type: 'stdout',
+                text: '[Supervisor] ✅ Rollback completado exitosamente. Reiniciando versión previa estable...',
+                timestamp: new Date().toISOString(),
+            });
+            const config = configManager.loadConfig();
+            const serviceDir = resolveServiceDir(configManager);
+            supervisor.start(serviceDir, getEnvOverrides(config));
+        } else {
+            supervisor.emit('log', {
+                type: 'stderr',
+                text: '[Supervisor] ❌ No hay copia de respaldo disponible para realizar rollback.',
+                timestamp: new Date().toISOString(),
+            });
         }
-        return process.cwd();
-    }
+    });
 
     // App & Base
     ipcMain.handle('app:ping', () => 'pong');
@@ -76,11 +173,11 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
         const config = configManager.loadConfig();
         if (!config.isConfigured) return { success: false, error: 'CONFIG_REQUIRED' };
 
-        const serviceDir = resolveServiceDir();
+        const serviceDir = resolveServiceDir(configManager);
         if (!fs.existsSync(path.join(serviceDir, 'index.js'))) {
             return {
                 success: false,
-                error: `No se encontró index.js en el directorio del bot: ${serviceDir}`,
+                error: `No se encontró index.js en el directorio del bot: ${serviceDir}. Asegúrate de clonar el bot o descargar una versión.`,
             };
         }
 
@@ -94,14 +191,16 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
     });
 
     ipcMain.handle('service:stop', async () => {
+        announcer.clear();
         await tunnel.stop();
         return supervisor.stop();
     });
 
     ipcMain.handle('service:restart', async () => {
         const config = configManager.loadConfig();
-        const serviceDir = resolveServiceDir();
+        const serviceDir = resolveServiceDir(configManager);
         configManager.writeEnvFile(serviceDir, config);
+        announcer.clear();
         await tunnel.stop();
         const res = await supervisor.restart(serviceDir, getEnvOverrides(config));
         if (res.success) {
@@ -110,15 +209,38 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
         return res;
     });
 
+    ipcMain.handle('service:clear-logs', () => {
+        supervisor.clearLogs();
+        return { success: true };
+    });
+
     // Cloudflare Tunnel
     ipcMain.handle('tunnel:get-status', () => tunnel.getStatus());
     ipcMain.handle('tunnel:start', (_e, port) => tunnel.start(port));
-    ipcMain.handle('tunnel:stop', () => tunnel.stop());
+    ipcMain.handle('tunnel:stop', async () => {
+        announcer.clear();
+        return tunnel.stop();
+    });
 
     // Configuration
     ipcMain.handle('config:get', () => configManager.loadConfig());
-    ipcMain.handle('config:save', (_e, cfg) => configManager.saveConfig(cfg));
+    ipcMain.handle('config:save', (_e, cfg) => {
+        announcer.setConfig(cfg);
+        return configManager.saveConfig(cfg);
+    });
     ipcMain.handle('config:generate-secret', () => generateApiSecret());
+    ipcMain.handle('config:select-cookies-file', async () => {
+        const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+            title: 'Seleccionar archivo de cookies (cookies.txt)',
+            filters: [
+                { name: 'Archivos de cookies (*.txt)', extensions: ['txt'] },
+                { name: 'Todos los archivos', extensions: ['*'] },
+            ],
+            properties: ['openFile'],
+        });
+        if (canceled || !filePaths || filePaths.length === 0) return { canceled: true };
+        return { canceled: false, filePath: filePaths[0] };
+    });
     ipcMain.handle('config:import-file', async () => {
         const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
             title: 'Importar configuración (.env o .json)',
@@ -175,6 +297,27 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
 
     // Updater & Audio Extractors
     ipcMain.handle('updater:check', () => updater.checkForUpdates(app.getVersion()));
+    ipcMain.handle('updater:apply', async (_e, downloadUrl) => {
+        if (!downloadUrl) return { success: false, error: 'NO_DOWNLOAD_URL' };
+
+        await tunnel.stop();
+        await supervisor.stop();
+
+        const updateRes = await updater.applyUpdate(downloadUrl);
+        if (!updateRes.success) {
+            return updateRes;
+        }
+
+        const config = configManager.loadConfig();
+        const serviceDir = resolveServiceDir(configManager);
+        configManager.writeEnvFile(serviceDir, config);
+
+        const restartRes = supervisor.start(serviceDir, getEnvOverrides(config));
+        if (restartRes.success) {
+            tunnel.start(config.port).catch(() => {});
+        }
+        return { success: true };
+    });
     ipcMain.handle('updater:rollback', () => ({ success: updater.rollback() }));
     ipcMain.handle('updater:update-extractors', () => {
         const binDir = path.join(configManager.dataDir, 'bin');
@@ -191,4 +334,8 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
     ipcMain.on('window:close', () => !mainWindow.isDestroyed() && mainWindow.close());
 }
 
-module.exports = { registerIpcHandlers };
+module.exports = {
+    registerIpcHandlers,
+    resolveServiceDir,
+    stopAllServices,
+};

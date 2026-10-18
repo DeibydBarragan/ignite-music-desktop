@@ -10,6 +10,10 @@ const DEFAULT_CONFIG = {
     apiSecret: '',
     port: 3001,
     isConfigured: false,
+    cookiesFile: '',
+    cookiesFromBrowser: '',
+    supabaseUrl: '',
+    supabaseKey: '',
 };
 
 /**

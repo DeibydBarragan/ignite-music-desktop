@@ -1,5 +1,7 @@
 'use strict';
 
+import { showToast } from './toast.js';
+
 export function initServiceControls() {
     const btnStart = document.getElementById('btnStartService');
     const btnStop = document.getElementById('btnStopService');
@@ -39,6 +41,7 @@ export function initServiceControls() {
 
     function updateUI(status) {
         const state = status.state || 'stopped';
+        const serviceBadge = document.getElementById('serviceBadge');
 
         if (state === 'running') {
             if (btnStart) btnStart.disabled = true;
@@ -49,6 +52,7 @@ export function initServiceControls() {
             if (botStatusLabel) botStatusLabel.textContent = 'En Línea';
             if (headerStatusDot) headerStatusDot.className = 'badge-dot active';
             if (headerStatusLabel) headerStatusLabel.textContent = 'Bot Activo';
+            if (serviceBadge) serviceBadge.className = 'tab-service-badge tab-service-badge-online';
 
             setUptimeActive(true, status.uptime || 0);
         } else if (state === 'starting' || state === 'stopping') {
@@ -61,6 +65,7 @@ export function initServiceControls() {
             if (botStatusLabel) botStatusLabel.textContent = isStarting ? 'Iniciando...' : 'Deteniendo...';
             if (headerStatusDot) headerStatusDot.className = 'badge-dot';
             if (headerStatusLabel) headerStatusLabel.textContent = isStarting ? 'Iniciando...' : 'Deteniendo...';
+            if (serviceBadge) serviceBadge.className = 'tab-service-badge tab-service-badge-warning';
         } else {
             // stopped or crashed
             if (btnStart) btnStart.disabled = false;
@@ -72,6 +77,7 @@ export function initServiceControls() {
             if (botStatusLabel) botStatusLabel.textContent = isCrash ? 'Error / Detenido' : 'Detenido';
             if (headerStatusDot) headerStatusDot.className = 'badge-dot';
             if (headerStatusLabel) headerStatusLabel.textContent = isCrash ? 'Error en Bot' : 'Bot Detenido';
+            if (serviceBadge) serviceBadge.className = 'tab-service-badge tab-service-badge-offline';
 
             setUptimeActive(false);
         }
@@ -84,11 +90,11 @@ export function initServiceControls() {
                 const res = await window.igniteLauncher.startService();
                 if (res && !res.success) {
                     btnStart.disabled = false;
-                    alert(`No se pudo iniciar el servicio:\n${res.error || 'Error desconocido'}`);
+                    showToast('No se pudo iniciar el servicio', res.error || 'Error desconocido al arrancar el bot.', 'error');
                 }
             } catch (err) {
                 btnStart.disabled = false;
-                alert(`Error al iniciar el servicio: ${err.message}`);
+                showToast('Error al iniciar el servicio', err.message, 'error');
             }
         });
     }
@@ -112,10 +118,11 @@ export function initServiceControls() {
                 const res = await window.igniteLauncher.restartService();
                 if (res && !res.success) {
                     btnRestart.disabled = false;
-                    alert(`No se pudo reiniciar el servicio:\n${res.error || 'Error'}`);
+                    showToast('No se pudo reiniciar el servicio', res.error || 'Error al reiniciar el bot.', 'error');
                 }
-            } catch {
+            } catch (err) {
                 btnRestart.disabled = false;
+                showToast('Error al reiniciar el servicio', err.message, 'error');
             }
         });
     }

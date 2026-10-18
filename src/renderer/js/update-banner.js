@@ -21,11 +21,15 @@ export function initUpdateBanner() {
         if (updateTitle) updateTitle.textContent = title;
         if (updateSubtitle) updateSubtitle.textContent = subtitle;
         currentDownloadUrl = downloadUrl || '';
+        if (btnApplyUpdate) {
+            btnApplyUpdate.style.display = downloadUrl ? 'inline-block' : 'none';
+        }
         updateBanner.style.display = 'flex';
     }
 
     function hideBanner() {
-        if (updateBanner) updateBanner.style.display = 'none';
+        if (!updateBanner) return;
+        updateBanner.style.display = 'none';
     }
 
     if (btnDismissUpdate) {
@@ -33,9 +37,66 @@ export function initUpdateBanner() {
     }
 
     if (btnApplyUpdate) {
-        btnApplyUpdate.addEventListener('click', () => {
-            if (currentDownloadUrl) {
-                window.open(currentDownloadUrl, '_blank');
+        btnApplyUpdate.addEventListener('click', async () => {
+            if (!currentDownloadUrl) return;
+
+            btnApplyUpdate.disabled = true;
+            const originalText = btnApplyUpdate.textContent;
+            btnApplyUpdate.textContent = 'Descargando...';
+
+            if (updateSubtitle) {
+                updateSubtitle.textContent = 'Descargando paquete de actualización...';
+            }
+
+            try {
+                const res = await window.igniteLauncher.applyUpdate(currentDownloadUrl);
+                if (res.success) {
+                    btnApplyUpdate.textContent = '¡Listo!';
+                    if (updateSubtitle) {
+                        updateSubtitle.textContent = '¡Actualización aplicada con éxito! El bot se ha reiniciado.';
+                    }
+                    setTimeout(() => {
+                        hideBanner();
+                        btnApplyUpdate.disabled = false;
+                        btnApplyUpdate.textContent = originalText;
+                    }, 3000);
+                } else {
+                    btnApplyUpdate.disabled = false;
+                    btnApplyUpdate.textContent = 'Reintentar';
+                    if (updateSubtitle) {
+                        updateSubtitle.textContent = `Error al actualizar: ${res.error || 'Fallo desconocido'}`;
+                    }
+                }
+            } catch (err) {
+                btnApplyUpdate.disabled = false;
+                btnApplyUpdate.textContent = 'Reintentar';
+                if (updateSubtitle) {
+                    updateSubtitle.textContent = `Error: ${err.message}`;
+                }
+            }
+        });
+    }
+
+    // Progress updates from main process
+    if (window.igniteLauncher && typeof window.igniteLauncher.onUpdateProgress === 'function') {
+        window.igniteLauncher.onUpdateProgress((progress) => {
+            if (updateSubtitle && progress.percent > 0) {
+                const transferredKb = Math.round((progress.transferred || 0) / 1024);
+                updateSubtitle.textContent = `Descargando actualización: ${progress.percent}% (${transferredKb} KB)...`;
+            }
+        });
+    }
+
+    // Status changed listener
+    if (window.igniteLauncher && typeof window.igniteLauncher.onUpdaterStatus === 'function') {
+        window.igniteLauncher.onUpdaterStatus((status) => {
+            console.log('[Updater Status]:', status);
+            if (status.state === 'rolled-back') {
+                showBanner(
+                    '⚠️ Versión revertida automáticamente',
+                    'La actualización falló durante el arranque en los primeros 10 segundos. Se restauró la versión previa estable sin intervención.',
+                    ''
+                );
             }
         });
     }
@@ -107,13 +168,6 @@ export function initUpdateBanner() {
             } finally {
                 btnUpdateExtractors.disabled = false;
             }
-        });
-    }
-
-    // Status changed listener
-    if (window.igniteLauncher.onUpdaterStatus) {
-        window.igniteLauncher.onUpdaterStatus((status) => {
-            console.log('[Updater Status]:', status);
         });
     }
 
