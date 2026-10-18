@@ -39,14 +39,68 @@ function copyRecursive(src, dest, filterFn) {
     }
 }
 
+function pruneUnnecessaryFiles(dir) {
+    const nodeModulesDir = path.join(dir, 'node_modules');
+    if (!fs.existsSync(nodeModulesDir)) return;
+
+    console.log('[bundle-service] Pruning devDependencies and build artifacts from bundled snapshot...');
+
+    // Heavy devDependencies that are not used at runtime
+    const devPkgs = ['@typescript', 'typescript', 'eslint', '@types'];
+    for (const pkg of devPkgs) {
+        const fullPkgPath = path.join(nodeModulesDir, pkg);
+        if (fs.existsSync(fullPkgPath)) {
+            try {
+                fs.rmSync(fullPkgPath, { recursive: true, force: true });
+                console.log(`[bundle-service] Removed unused dev dependency: ${pkg}`);
+            } catch (err) {
+                console.warn(`[bundle-service] Warning removing ${pkg}:`, err.message);
+            }
+        }
+    }
+
+    // Clean source maps, type definitions, doc files and test directories
+    function cleanTree(current) {
+        if (!fs.existsSync(current)) return;
+        const entries = fs.readdirSync(current, { withFileTypes: true });
+        for (const entry of entries) {
+            const full = path.join(current, entry.name);
+            if (entry.isDirectory()) {
+                if (['.bin', 'test', 'tests', '__tests__', 'example', 'examples', 'docs'].includes(entry.name)) {
+                    try { fs.rmSync(full, { recursive: true, force: true }); } catch { /* ignore */ }
+                } else {
+                    cleanTree(full);
+                }
+            } else if (entry.isFile()) {
+                if (entry.name.endsWith('.map') ||
+                    entry.name.endsWith('.d.ts') ||
+                    entry.name.endsWith('.md') ||
+                    entry.name === 'CHANGELOG' ||
+                    entry.name === 'LICENSE') {
+                    try { fs.unlinkSync(full); } catch { /* ignore */ }
+                }
+            }
+        }
+    }
+
+    try {
+        cleanTree(nodeModulesDir);
+        console.log('[bundle-service] Pruning finished successfully.');
+    } catch (err) {
+        console.warn('[bundle-service] Warning during pruning:', err.message);
+    }
+}
+
 function bundleService() {
     console.log('[bundle-service] Checking bundled bot service snapshot...');
 
     if (fs.existsSync(path.join(targetDir, 'index.js'))) {
         console.log('[bundle-service] Bundled snapshot already exists in resources/service/bundled.');
         ensureFingerprint(targetDir);
+        pruneUnnecessaryFiles(targetDir);
         return;
     }
+
 
     if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
@@ -67,8 +121,10 @@ function bundleService() {
                 return name !== '.git' && name !== '.env';
             });
         }
+        pruneUnnecessaryFiles(targetDir);
         ensureFingerprint(targetDir);
         console.log('[bundle-service] Service bundled successfully.');
+
     } else {
         console.warn(`[bundle-service] Source directory ${sourceDir} not found. Creating placeholder index.js...`);
         fs.writeFileSync(

@@ -18,6 +18,11 @@ files:
   - "!**/node_modules/*.d.ts"
   - "!**/node_modules/.bin"
 
+electronLanguages:
+  - "es"
+  - "es-419"
+  - "en-US"
+
 extraResources:
   - from: "resources/bin"
     to: "bin"
@@ -27,11 +32,21 @@ extraResources:
     to: "service/bundled"
     filter:
       - "**/*"
-  - from: "resources/service/bundled/node_modules"
-    to: "service/bundled/node_modules"
-    filter:
-      - "**/*"
       - "**/.*"
+      - "!**/node_modules/@typescript"
+      - "!**/node_modules/@typescript/**/*"
+      - "!**/node_modules/typescript"
+      - "!**/node_modules/typescript/**/*"
+      - "!**/node_modules/eslint"
+      - "!**/node_modules/eslint/**/*"
+      - "!**/node_modules/@types"
+      - "!**/node_modules/@types/**/*"
+      - "!**/node_modules/**/.bin/**"
+      - "!**/node_modules/**/*.map"
+      - "!**/node_modules/**/*.d.ts"
+      - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}/**"
+      - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+
 
 win:
   target:
