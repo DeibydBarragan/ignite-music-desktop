@@ -90,4 +90,14 @@ export const Icons = {
 
     AlertCircle: (size = 18, className = '') =>
         createSvg('<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>', size, className),
+
+    AlertTriangle: (size = 20, className = '') =>
+        createSvg('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>', size, className),
+
+    Minimize2: (size = 14, className = '') =>
+        createSvg('<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" x2="21" y1="10" y2="3"/><line x1="3" x2="10" y1="21" y2="14"/>', size, className),
+
+    Power: (size = 14, className = '') =>
+        createSvg('<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/>', size, className),
 };
+

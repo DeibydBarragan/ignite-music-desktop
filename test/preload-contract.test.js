@@ -68,6 +68,9 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
         assert.equal(typeof exposedApi.minimizeWindow, 'function');
         assert.equal(typeof exposedApi.maximizeWindow, 'function');
         assert.equal(typeof exposedApi.closeWindow, 'function');
+        assert.equal(typeof exposedApi.confirmExit, 'function');
+        assert.equal(typeof exposedApi.minimizeToTray, 'function');
+        assert.equal(typeof exposedApi.onCloseRequested, 'function');
         assert.equal(typeof exposedApi.onStatusChange, 'function');
         assert.equal(typeof exposedApi.onLogEntry, 'function');
         assert.equal(typeof exposedApi.onLogsCleared, 'function');
@@ -128,7 +131,7 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
             },
         };
 
-        const { registerIpcHandlers } = require('../src/main/ipc-handlers');
+        const { registerIpcHandlers, isServiceActive } = require('../src/main/ipc-handlers');
         const mockWindow = {
             isDestroyed: () => false,
             minimize: mock.fn(),
@@ -136,7 +139,10 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
             unmaximize: mock.fn(),
             isMaximized: () => false,
             close: mock.fn(),
+            hide: mock.fn(),
+            destroy: mock.fn(),
         };
+
 
         registerIpcHandlers(mockWindow);
 
@@ -171,6 +177,8 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
         assert.ok(registeredListeners.has('window:minimize'));
         assert.ok(registeredListeners.has('window:maximize'));
         assert.ok(registeredListeners.has('window:close'));
+        assert.ok(registeredHandlers.has('window:confirm-close'));
+        assert.ok(registeredListeners.has('window:minimize-to-tray'));
 
         registeredListeners.get('window:minimize')();
         assert.equal(mockWindow.minimize.mock.callCount(), 1);
@@ -180,5 +188,13 @@ describe('Fase 1: Electron Scaffolding & IPC Contract Tests', () => {
 
         registeredListeners.get('window:close')();
         assert.equal(mockWindow.close.mock.callCount(), 1);
+
+        registeredListeners.get('window:minimize-to-tray')();
+        assert.equal(mockWindow.hide.mock.callCount(), 1);
+
+        // Service is initially stopped in this test suite
+        assert.equal(isServiceActive(), false);
     });
 });
+
+

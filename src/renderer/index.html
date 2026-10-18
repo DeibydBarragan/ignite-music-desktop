@@ -576,7 +576,39 @@
             </div>
         </div>
 
+        <!-- App Exit Confirmation Modal (when bot is running) -->
+        <div class="modal-overlay glass-backdrop" id="confirmExitModal" style="display: none;">
+            <div class="modal-card glass-modal-panel confirm-dialog-card">
+                <div class="confirm-dialog-header">
+                    <div class="confirm-icon-danger" id="exitConfirmIconSlot"></div>
+                    <div>
+                        <h3 class="modal-title">¿Cerrar Ignite Music?</h3>
+                        <p class="modal-subtitle">El bot de música se encuentra en ejecución en este momento.</p>
+                    </div>
+                </div>
+                <div class="alert-box alert-warning logout-service-warning" style="margin-bottom: 20px;">
+                    <span class="logout-warning-icon">⚠️</span>
+                    <div>
+                        <strong>La reproducción activa se interrumpirá</strong>
+                        <p style="margin: 2px 0 0; font-size: 0.78rem; opacity: 0.9;">Al salir por completo, el bot se desconectará de Discord y el túnel de Cloudflare se cerrará.</p>
+                    </div>
+                </div>
+                <div class="modal-footer confirm-dialog-footer" style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-outline" id="btnCancelExit">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" id="btnMinimizeExit" title="Mantener el bot activo en segundo plano">
+                        <span id="minimizeExitIconSlot"></span>
+                        <span>Minimizar en bandeja</span>
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmExit">
+                        <span id="confirmExitIconSlot"></span>
+                        <span>Detener y Salir</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- In-App Glass Toast Notifications -->
+
         <div id="appToast" class="app-toast glass-panel" style="display: none;">
             <div class="app-toast-icon" id="appToastIconSlot"></div>
             <div class="app-toast-content">

@@ -2,6 +2,7 @@
 
 import { initSettingsModal } from './settings-modal.js';
 import { initOnboardingModal } from './onboarding-modal.js';
+import { initExitModal } from './exit-modal.js';
 import { initAuthView } from './auth-view.js';
 import { initLogViewer } from './log-viewer.js';
 import { initServiceControls } from './service-controls.js';
@@ -199,6 +200,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             await evaluateAccess();
         },
     });
+
+    const exitModal = initExitModal();
+
 
     function updateConfigBadge(isConfigured) {
         if (!configDot || !configStatusLabel) return;

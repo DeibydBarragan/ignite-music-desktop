@@ -11,7 +11,7 @@ if (typeof dns.setDefaultResultOrder === 'function') {
 const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
 const { createTray } = require('./tray-manager');
-const { registerIpcHandlers, stopAllServices } = require('./ipc-handlers');
+const { registerIpcHandlers, stopAllServices, isServiceActive } = require('./ipc-handlers');
 const { ConfigManager } = require('./config-manager');
 
 const configManager = new ConfigManager();
@@ -85,8 +85,22 @@ function createWindow() {
         }
     }, 600);
 
-    // Intercept close button: check if minimize to tray is enabled
+    // Intercept close button: prompt if bot is running or minimize to tray if enabled
     mainWindow.on('close', (event) => {
+        if (app.isQuitting) return;
+
+        // If the bot service is running, intercept close and prompt for confirmation in UI
+        if (isServiceActive()) {
+            event.preventDefault();
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+            if (!mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('window:request-close-confirm');
+            }
+            return;
+        }
+
         let shouldMinimize = false;
         try {
             const config = configManager.loadConfig();
@@ -95,7 +109,7 @@ function createWindow() {
             shouldMinimize = false;
         }
 
-        if (!app.isQuitting && shouldMinimize) {
+        if (shouldMinimize) {
             event.preventDefault();
             mainWindow.hide();
         }

@@ -92,8 +92,18 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
     minimizeWindow: () => ipcRenderer.send('window:minimize'),
     maximizeWindow: () => ipcRenderer.send('window:maximize'),
     closeWindow: () => ipcRenderer.send('window:close'),
+    confirmExit: () => ipcRenderer.invoke('window:confirm-close'),
+    minimizeToTray: () => ipcRenderer.send('window:minimize-to-tray'),
 
     // Event listeners
+    onCloseRequested: (callback) => {
+        if (typeof callback !== 'function') return () => {};
+        const subscription = () => callback();
+        ipcRenderer.on('window:request-close-confirm', subscription);
+        return () => {
+            ipcRenderer.removeListener('window:request-close-confirm', subscription);
+        };
+    },
     onStatusChange: (callback) => {
         if (typeof callback !== 'function') return () => {};
         const subscription = (_event, status) => callback(status);
@@ -102,6 +112,7 @@ contextBridge.exposeInMainWorld('igniteLauncher', {
             ipcRenderer.removeListener('service:status-changed', subscription);
         };
     },
+
 
     onLogEntry: (callback) => {
         if (typeof callback !== 'function') return () => {};

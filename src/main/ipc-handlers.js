@@ -387,10 +387,32 @@ function registerIpcHandlers(mainWindow, customConfig, customAuth, customSupervi
         }
     });
     ipcMain.on('window:close', () => !mainWindow.isDestroyed() && mainWindow.close());
+    ipcMain.handle('window:confirm-close', async () => {
+        app.isQuitting = true;
+        await stopAllServices();
+        if (!mainWindow.isDestroyed()) {
+            mainWindow.destroy();
+        }
+        app.quit();
+        return { success: true };
+    });
+    ipcMain.on('window:minimize-to-tray', () => {
+        if (!mainWindow.isDestroyed()) {
+            mainWindow.hide();
+        }
+    });
+}
+
+function isServiceActive() {
+    if (!activeSupervisor) return false;
+    const state = activeSupervisor.getStatus()?.state;
+    return state === 'running' || state === 'starting';
 }
 
 module.exports = {
     registerIpcHandlers,
     resolveServiceDir,
     stopAllServices,
+    isServiceActive,
 };
+
