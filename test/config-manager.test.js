@@ -173,4 +173,66 @@ describe('Fase 2: ConfigManager & Credentials Security Tests', () => {
         const finalStatus = manager.getCookiesStatus();
         assert.equal(finalStatus.configured, false);
     });
+
+    test('ConfigManager validates, encrypts and formats voiceEnabled and groqApiKey', () => {
+        // Validation: required groqApiKey when voiceEnabled is true
+        const invalidVoice = validateConfig({
+            discordToken: 'MTAyOTM4NDc1NjQ3MzgxOTI4Mw.G_abcd.1234567890abcdef',
+            clientId: '102938475647381928',
+            clientSecret: 'my-super-secret-oauth2-key',
+            guildId: '987654321098765432',
+            apiSecret: 'f87a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8',
+            port: 3001,
+            voiceEnabled: true,
+            groqApiKey: '',
+        });
+        assert.equal(invalidVoice.valid, false);
+        assert.ok(invalidVoice.errors.some((e) => e.includes('Groq')));
+
+        // Valid when key provided
+        const validVoice = validateConfig({
+            discordToken: 'MTAyOTM4NDc1NjQ3MzgxOTI4Mw.G_abcd.1234567890abcdef',
+            clientId: '102938475647381928',
+            clientSecret: 'my-super-secret-oauth2-key',
+            guildId: '987654321098765432',
+            apiSecret: 'f87a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8',
+            port: 3001,
+            voiceEnabled: true,
+            groqApiKey: 'gsk_test_groq_api_key_12345',
+        });
+        assert.equal(validVoice.valid, true);
+
+        // Persistence & encryption
+        const manager = new ConfigManager(tmpDir);
+        manager.saveConfig({
+            discordToken: 'MTAyOTM4NDc1NjQ3MzgxOTI4Mw.G_abcd.1234567890abcdef',
+            clientId: '102938475647381928',
+            clientSecret: 'my-super-secret-oauth2-key',
+            guildId: '987654321098765432',
+            apiSecret: 'f87a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8',
+            port: 3001,
+            voiceEnabled: true,
+            groqApiKey: 'gsk_test_groq_api_key_12345',
+        });
+
+        // Inspect raw disk
+        const rawContent = JSON.parse(fs.readFileSync(manager.configFile, 'utf8'));
+        assert.equal(rawContent.voiceEnabled, true);
+        assert.ok(rawContent.groqApiKey.startsWith('enc:'));
+        assert.notEqual(rawContent.groqApiKey, 'gsk_test_groq_api_key_12345');
+
+        // Load through manager
+        const loaded = manager.loadConfig();
+        assert.equal(loaded.voiceEnabled, true);
+        assert.equal(loaded.groqApiKey, 'gsk_test_groq_api_key_12345');
+
+        // Format env content
+        const envStr = manager.formatEnvContent(loaded);
+        assert.ok(envStr.includes('VOICE_ENABLED=true'));
+        assert.ok(envStr.includes('GROQ_API_KEY=gsk_test_groq_api_key_12345'));
+
+        // When voice is disabled
+        const disabledEnv = manager.formatEnvContent({ ...loaded, voiceEnabled: false });
+        assert.ok(disabledEnv.includes('VOICE_ENABLED=false'));
+    });
 });

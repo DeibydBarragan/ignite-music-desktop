@@ -40,6 +40,10 @@ export function initSettingsModal(optionsOrOnSaveSuccess) {
     const statusBadgeSupabaseKey = document.getElementById('statusBadgeSupabaseKey');
 
     const checkboxMinimizeToTray = document.getElementById('checkboxMinimizeToTray');
+    const checkboxVoiceEnabled = document.getElementById('checkboxVoiceEnabled');
+    const inputGroqApiKey = document.getElementById('inputGroqApiKey');
+    const statusBadgeGroqApiKey = document.getElementById('statusBadgeGroqApiKey');
+    const groqKeyRequiredMark = document.getElementById('groqKeyRequiredMark');
 
     let currentLoadedConfig = null;
 
@@ -100,6 +104,15 @@ export function initSettingsModal(optionsOrOnSaveSuccess) {
     bindSecretInputTracker(inputClientSecret, statusBadgeClientSecret, 'clientSecret');
     bindSecretInputTracker(inputApiSecret, statusBadgeApiSecret, 'apiSecret');
     bindSecretInputTracker(inputSupabaseKey, statusBadgeSupabaseKey, 'supabaseKey');
+    bindSecretInputTracker(inputGroqApiKey, statusBadgeGroqApiKey, 'groqApiKey');
+
+    if (checkboxVoiceEnabled) {
+        checkboxVoiceEnabled.addEventListener('change', () => {
+            if (groqKeyRequiredMark) {
+                groqKeyRequiredMark.style.display = checkboxVoiceEnabled.checked ? 'inline' : 'none';
+            }
+        });
+    }
 
     // YouTube cookies file picker (independent from config files)
     if (btnSelectCookiesFile) {
@@ -183,6 +196,7 @@ export function initSettingsModal(optionsOrOnSaveSuccess) {
             const clientSecretTyped = inputClientSecret?.value?.trim() || '';
             const apiSecretTyped = inputApiSecret?.value?.trim() || '';
             const supabaseKeyTyped = inputSupabaseKey?.value?.trim() || '';
+            const groqApiKeyTyped = inputGroqApiKey?.value?.trim() || '';
 
             const payload = {
                 discordToken: tokenTyped !== '' ? tokenTyped : (currentLoadedConfig?.discordToken || ''),
@@ -196,6 +210,8 @@ export function initSettingsModal(optionsOrOnSaveSuccess) {
                 supabaseUrl: inputSupabaseUrl?.value?.trim() || '',
                 supabaseKey: supabaseKeyTyped !== '' ? supabaseKeyTyped : (currentLoadedConfig?.supabaseKey || ''),
                 minimizeToTray: checkboxMinimizeToTray ? checkboxMinimizeToTray.checked : false,
+                voiceEnabled: checkboxVoiceEnabled ? checkboxVoiceEnabled.checked : false,
+                groqApiKey: groqApiKeyTyped !== '' ? groqApiKeyTyped : (currentLoadedConfig?.groqApiKey || ''),
             };
 
             btnSaveSettings.disabled = true;
@@ -312,6 +328,30 @@ export function initSettingsModal(optionsOrOnSaveSuccess) {
         // System Tray Preference
         if (checkboxMinimizeToTray) {
             checkboxMinimizeToTray.checked = Boolean(cfg.minimizeToTray);
+        }
+
+        // Voice Commands & Groq API Key
+        if (checkboxVoiceEnabled) {
+            checkboxVoiceEnabled.checked = Boolean(cfg.voiceEnabled);
+            if (groqKeyRequiredMark) {
+                groqKeyRequiredMark.style.display = checkboxVoiceEnabled.checked ? 'inline' : 'none';
+            }
+        }
+        if (inputGroqApiKey) {
+            inputGroqApiKey.value = '';
+            if (cfg.groqApiKey) {
+                inputGroqApiKey.placeholder = '•••••••••••••••••••••••••••••••• (Escribe para cambiar)';
+                if (statusBadgeGroqApiKey) {
+                    statusBadgeGroqApiKey.className = 'badge-pill-status pill-status-online';
+                    statusBadgeGroqApiKey.textContent = 'Configurado ✓';
+                }
+            } else {
+                inputGroqApiKey.placeholder = 'gsk_... Clave de API de Groq';
+                if (statusBadgeGroqApiKey) {
+                    statusBadgeGroqApiKey.className = 'badge-pill-status pill-status-offline';
+                    statusBadgeGroqApiKey.textContent = 'Sin configurar';
+                }
+            }
         }
 
         // Cancel Button Text: if not configured, clearly signal return to wizard

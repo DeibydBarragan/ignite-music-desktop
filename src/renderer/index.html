@@ -497,6 +497,36 @@
                             </div>
                         </div>
 
+                        <!-- Voice Commands & Groq Whisper AI -->
+                        <div class="form-section-divider" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
+                            <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; color: var(--foreground); display: flex; align-items: center; gap: 6px;">
+                                <span>🎙️ Comandos de Voz con IA (Groq Whisper)</span>
+                            </h4>
+                            <p style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px;">
+                                Permite a los miembros del canal controlar el bot hablándole directamente con reconocimiento de voz de ultra baja latencia.
+                            </p>
+                            <div class="switch-setting-row" style="margin-top: 8px;">
+                                <div class="switch-setting-info">
+                                    <strong class="switch-setting-title">Habilitar Comandos de Voz</strong>
+                                    <p class="switch-setting-desc">Activa el receptor de voz en Discord y la transcripción con Whisper en la nube.</p>
+                                </div>
+                                <label class="glass-switch" title="Activar/Desactivar comandos de voz">
+                                    <input type="checkbox" id="checkboxVoiceEnabled">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group" id="groupGroqApiKey" style="margin-top: 12px;">
+                                <div class="form-label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label for="inputGroqApiKey" class="form-label" style="margin-bottom: 0;">Groq API Key <span class="required" id="groqKeyRequiredMark" style="display: none;">*</span></label>
+                                    <span id="statusBadgeGroqApiKey" class="badge-pill-status pill-status-offline">Sin configurar</span>
+                                </div>
+                                <input type="password" id="inputGroqApiKey" class="form-control glass-input" placeholder="gsk_... Clave de API de Groq" autocomplete="off">
+                                <small style="color: var(--muted); font-size: 0.75rem; display: block; margin-top: 5px;">
+                                    Obtén tu API Key gratuita en <span style="color: #c084fc; font-family: var(--font-mono);">console.groq.com/keys</span>
+                                </small>
+                            </div>
+                        </div>
+
                         <!-- System Tray Window Behavior -->
                         <div class="form-section-divider" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
                             <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; color: var(--foreground); display: flex; align-items: center; gap: 6px;">

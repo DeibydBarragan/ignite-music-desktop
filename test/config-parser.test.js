@@ -129,4 +129,32 @@ API_SECRET=12345678901234567890123456789012
         assert.equal(res.isValidComplete, false);
         assert.ok(res.missingFields.length >= 3);
     });
+
+    test('parseConfigFile parses VOICE_ENABLED and GROQ_API_KEY from .env and .json', () => {
+        const envContent = `
+TOKEN=my-token-12345678901234567890
+CLIENT_ID=1557938456225915001
+CLIENT_SECRET=client-secret-12345
+GUILD_ID=1011718919473610863
+VOICE_ENABLED=true
+GROQ_API_KEY=gsk_test_api_key_abc123
+`;
+        const res = parseConfigFile(envContent, '.env');
+        assert.equal(res.success, true);
+        assert.equal(res.config.voiceEnabled, true);
+        assert.equal(res.config.groqApiKey, 'gsk_test_api_key_abc123');
+
+        const jsonContent = JSON.stringify({
+            discordToken: 'my-token-12345678901234567890',
+            clientId: '1557938456225915001',
+            clientSecret: 'client-secret-12345',
+            guildId: '1011718919473610863',
+            voiceEnabled: true,
+            groqApiKey: 'gsk_from_json_key',
+        });
+        const resJson = parseConfigFile(jsonContent, 'config.json');
+        assert.equal(resJson.success, true);
+        assert.equal(resJson.config.voiceEnabled, true);
+        assert.equal(resJson.config.groqApiKey, 'gsk_from_json_key');
+    });
 });

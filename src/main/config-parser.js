@@ -115,7 +115,9 @@ function parseConfigFile(content, filename = '') {
         'supabaseUrl', 'SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL',
         'supabaseKey', 'SUPABASE_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY',
         'cookiesFromBrowser', 'COOKIES_FROM_BROWSER',
-        'minimizeToTray'
+        'minimizeToTray',
+        'voiceEnabled', 'VOICE_ENABLED',
+        'groqApiKey', 'GROQ_API_KEY',
     ];
     const foundKeysCount = recognizedKeys.filter(k => raw[k] !== undefined && String(raw[k]).trim() !== '').length;
 
@@ -141,6 +143,10 @@ function parseConfigFile(content, filename = '') {
     const supabaseUrl = raw.supabaseUrl || raw.SUPABASE_URL || raw.NEXT_PUBLIC_SUPABASE_URL || '';
     const supabaseKey = raw.supabaseKey || raw.SUPABASE_KEY || raw.NEXT_PUBLIC_SUPABASE_ANON_KEY || raw.SUPABASE_ANON_KEY || raw.SUPABASE_SERVICE_ROLE_KEY || '';
     const minimizeToTray = raw.minimizeToTray !== undefined ? Boolean(raw.minimizeToTray) : false;
+    const voiceEnabled = raw.voiceEnabled !== undefined
+        ? (String(raw.voiceEnabled).toLowerCase() === 'true' || Boolean(raw.voiceEnabled))
+        : (raw.VOICE_ENABLED !== undefined ? String(raw.VOICE_ENABLED).toLowerCase() === 'true' : false);
+    const groqApiKey = raw.groqApiKey || raw.GROQ_API_KEY || '';
 
     // 4. Validate essential fields required to operate the bot
     const missingFields = [];
@@ -166,6 +172,8 @@ function parseConfigFile(content, filename = '') {
             supabaseUrl: String(supabaseUrl).trim(),
             supabaseKey: String(supabaseKey).trim(),
             minimizeToTray,
+            voiceEnabled,
+            groqApiKey: String(groqApiKey).trim(),
         },
     };
 }

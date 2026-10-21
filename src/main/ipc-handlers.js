@@ -38,6 +38,12 @@ function getEnvOverrides(config) {
         overrides.SUPABASE_ANON_KEY = config.supabaseKey;
         overrides.SUPABASE_SERVICE_ROLE_KEY = config.supabaseKey;
     }
+    if (config.voiceEnabled) {
+        overrides.VOICE_ENABLED = 'true';
+        if (config.groqApiKey) overrides.GROQ_API_KEY = config.groqApiKey;
+    } else {
+        overrides.VOICE_ENABLED = 'false';
+    }
     if (activeTunnel?.url) overrides.PUBLIC_API_URL = activeTunnel.url;
     return overrides;
 }

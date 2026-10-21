@@ -87,6 +87,8 @@ class ConfigManager {
                 supabaseUrl: parsed.supabaseUrl || DEFAULT_CONFIG.supabaseUrl,
                 supabaseKey: this.decryptField(parsed.supabaseKey) || DEFAULT_CONFIG.supabaseKey,
                 minimizeToTray: parsed.minimizeToTray !== undefined ? Boolean(parsed.minimizeToTray) : false,
+                voiceEnabled: parsed.voiceEnabled !== undefined ? Boolean(parsed.voiceEnabled) : false,
+                groqApiKey: this.decryptField(parsed.groqApiKey) || '',
             };
         } catch {
             return { ...DEFAULT_CONFIG };
@@ -118,6 +120,8 @@ class ConfigManager {
             supabaseUrl: (newConfig.supabaseUrl || '').trim(),
             supabaseKey: this.encryptField((newConfig.supabaseKey || '').trim()),
             minimizeToTray: newConfig.minimizeToTray !== undefined ? Boolean(newConfig.minimizeToTray) : false,
+            voiceEnabled: newConfig.voiceEnabled !== undefined ? Boolean(newConfig.voiceEnabled) : false,
+            groqApiKey: this.encryptField((newConfig.groqApiKey || '').trim()),
             updatedAt: new Date().toISOString(),
         };
 
@@ -160,6 +164,12 @@ class ConfigManager {
             lines.push(`SUPABASE_KEY=${config.supabaseKey.trim()}`);
             lines.push(`SUPABASE_ANON_KEY=${config.supabaseKey.trim()}`);
             lines.push(`SUPABASE_SERVICE_ROLE_KEY=${config.supabaseKey.trim()}`);
+        }
+        if (config.voiceEnabled) {
+            lines.push('VOICE_ENABLED=true');
+            if (config.groqApiKey) lines.push(`GROQ_API_KEY=${config.groqApiKey.trim()}`);
+        } else {
+            lines.push('VOICE_ENABLED=false');
         }
 
         lines.push('');

@@ -15,6 +15,8 @@ const DEFAULT_CONFIG = {
     supabaseUrl: '',
     supabaseKey: '',
     minimizeToTray: false,
+    voiceEnabled: false,
+    groqApiKey: '',
 };
 
 /**
@@ -53,6 +55,12 @@ function validateConfig(config) {
     const portNum = Number(config.port);
     if (!Number.isInteger(portNum) || portNum < 1024 || portNum > 65535) {
         errors.push('El puerto debe ser un número entero entre 1024 y 65535 (por defecto: 3001).');
+    }
+
+    if (config.voiceEnabled) {
+        if (!config.groqApiKey || typeof config.groqApiKey !== 'string' || !config.groqApiKey.trim()) {
+            errors.push('La API Key de Groq es requerida si se habilitan los comandos de voz.');
+        }
     }
 
     return {
