@@ -94,7 +94,7 @@ function pruneUnnecessaryFiles(dir) {
 function bundleService() {
     console.log('[bundle-service] Checking bundled bot service snapshot...');
 
-    if (fs.existsSync(path.join(targetDir, 'index.js'))) {
+    if (!fs.existsSync(path.join(sourceDir, 'index.js')) && fs.existsSync(path.join(targetDir, 'index.js'))) {
         console.log('[bundle-service] Bundled snapshot already exists in resources/service/bundled.');
         ensureFingerprint(targetDir);
         pruneUnnecessaryFiles(targetDir);
@@ -122,8 +122,10 @@ function bundleService() {
             });
         }
         pruneUnnecessaryFiles(targetDir);
+        const snapshotVer = String(Date.now());
+        fs.writeFileSync(path.join(targetDir, '.snapshot-version'), snapshotVer, 'utf8');
         ensureFingerprint(targetDir);
-        console.log('[bundle-service] Service bundled successfully.');
+        console.log(`[bundle-service] Service bundled successfully (snapshot version: ${snapshotVer}).`);
 
     } else {
         console.warn(`[bundle-service] Source directory ${sourceDir} not found. Creating placeholder index.js...`);

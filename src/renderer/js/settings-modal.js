@@ -174,10 +174,12 @@ export function initSettingsModal(optionsOrOnSaveSuccess) {
                 }
                 // Decouple cookies.txt: explicitly preserve existing cookies configuration
                 const cookiesToKeep = currentLoadedConfig?.cookiesFile || inputCookiesFile?.value || '';
-                populateFields({
+                currentLoadedConfig = {
+                    ...currentLoadedConfig,
                     ...res.config,
                     cookiesFile: cookiesToKeep,
-                });
+                };
+                populateFields(currentLoadedConfig);
                 const fileLabel = res.filename ? `<strong>${res.filename}</strong>` : 'el archivo seleccionado';
                 showAlert('success', `Datos importados desde ${fileLabel}. <em>(La configuración de cookies.txt se mantiene independiente)</em>.`);
             } catch (err) {

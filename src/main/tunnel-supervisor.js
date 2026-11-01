@@ -81,7 +81,7 @@ class TunnelSupervisor extends EventEmitter {
             timer.unref?.();
 
             try {
-                this.child = spawn(binary, ['tunnel', '--url', `http://127.0.0.1:${port}`, '--no-autoupdate'], {
+                this.child = spawn(binary, ['tunnel', '--protocol', 'http2', '--url', `http://127.0.0.1:${port}`, '--no-autoupdate'], {
                     stdio: ['ignore', 'pipe', 'pipe'],
                     windowsHide: true,
                 });

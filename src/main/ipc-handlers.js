@@ -75,10 +75,33 @@ function resolveServiceDir(configManager) {
     const currentDir = path.join(dataDir, 'service', 'current');
     const bundledDir = path.join(process.resourcesPath || '', 'service', 'bundled');
     if (fs.existsSync(path.join(currentDir, 'index.js'))) {
+        // Sync updated code from bundled snapshot when version changes or voice is missing
+        if (fs.existsSync(path.join(bundledDir, 'index.js'))) {
+            const bundledVerFile = path.join(bundledDir, '.snapshot-version');
+            const currentVerFile = path.join(currentDir, '.snapshot-version');
+            const bundledVer = fs.existsSync(bundledVerFile) ? fs.readFileSync(bundledVerFile, 'utf8').trim() : '';
+            const currentVer = fs.existsSync(currentVerFile) ? fs.readFileSync(currentVerFile, 'utf8').trim() : '';
+            const needsUpdate = !currentVer || currentVer !== bundledVer || !fs.existsSync(path.join(currentDir, 'src', 'voice'));
+
+            if (needsUpdate) {
+                try {
+                    fs.cpSync(bundledDir, currentDir, {
+                        recursive: true,
+                        filter: (src) => {
+                            const name = path.basename(src);
+                            return name !== '.env' && name !== 'cookies.txt' && name !== 'data';
+                        }
+                    });
+                } catch { /* ignore */ }
+            }
+        }
+
         // Auto-heal: if current directory is missing node_modules or has missing critical dependencies, copy from bundled snapshot
         const currentMarker = path.join(currentDir, 'node_modules', '.musicbot-installed');
         const isNodeModulesIncomplete = !fs.existsSync(path.join(currentDir, 'node_modules')) ||
             !fs.existsSync(path.join(currentDir, 'node_modules', 'discord.js')) ||
+            !fs.existsSync(path.join(currentDir, 'node_modules', 'koffi')) ||
+            !fs.existsSync(path.join(currentDir, 'node_modules', '@koromix')) ||
             !fs.existsSync(currentMarker);
 
         if (isNodeModulesIncomplete && fs.existsSync(path.join(bundledDir, 'node_modules'))) {
